@@ -85,27 +85,49 @@ export function openCheckIn({ api, provider, schedule, onDone }) {
 }
 
 export function openCheckOut({ api, provider, schedule, onDone }) {
-  const branch = schedule.assignment.branch, radius = branch.geofence_radius_meters; let fix = null, modal;
+  const branch = schedule.assignment.branch, radius = branch.geofence_radius_meters, st = schedule.settings || {};
+  const needSelfie = st.checkout_selfie_required !== false, maxBytes = st.selfie_max_bytes || 600000;
+  let fix = null, photo = null, stream = null, modal;
+  const cleanup = () => { stopCamera(stream); stream = null; };
   const fail = (title, msg, extra, retry) => modal.setBody(h('div', { class: 'alert alert-bad', role: 'alert' }, h('strong', {}, title), h('p', {}, msg)), extra || null, h('div', { class: 'form-actions' }, button(t('Close'), { on: { click: () => modal.close() } }), retry ? button(t('Retry'), { kind: 'primary', on: { click: retry } }) : null));
   async function locate() {
-    modal.setBody(spinner(t('Getting your location...')));
+    cleanup(); modal.setBody(spinner(t('Getting your location...')));
     try { fix = await provider.getPosition({ timeoutMs: 25000 }); } catch (e) { return fail(t('Location problem'), t(LOC_HELP[e.state] || LOC_HELP.UNAVAILABLE), null, locate); }
     const d = Math.round(haversineMeters(fix.latitude, fix.longitude, branch.latitude, branch.longitude)), outside = d > radius;
     modal.setBody(outside ? h('div', { class: 'alert alert-warn' }, t('You are {d} m from the branch (limit {r} m). Your supervisor will see this.', { d, r: radius })) : h('div', { class: 'alert alert-ok' }, '✔ ', t('You are inside the branch area.')),
-      h('p', {}, t('End your shift now?')), h('div', { class: 'form-actions' }, button(t('Cancel'), { on: { click: () => modal.close() } }), button(t('Check Out'), { kind: 'primary', big: true, id: 'btn-confirm-checkout', on: { click: submit } })));
+      h('p', {}, needSelfie ? t('A selfie is required to end your shift.') : t('End your shift now?')), h('div', { class: 'form-actions' }, button(t('Cancel'), { on: { click: () => modal.close() } }),
+        button(needSelfie ? t('Continue to selfie') : t('Check Out'), { kind: 'primary', big: true, id: 'btn-confirm-checkout', on: { click: needSelfie ? stepCamera : submit } })));
+  }
+  async function stepCamera() {
+    const video = h('video', { class: 'camera', autoplay: true, playsinline: true, muted: true, 'aria-label': t('Camera preview') });
+    const fileInput = h('input', { type: 'file', accept: 'image/*', capture: 'user', class: 'sr-only', id: 'selfie-file', on: { change: async (ev) => { const f = ev.target.files[0]; if (!f) return; try { photo = await captureToJpeg(await fileToImage(f), maxBytes); stepPreview(); } catch (e) { fail(t('Selfie problem'), errorMessage(e)); } } } });
+    const shoot = button(t('Take photo'), { kind: 'primary', big: true, id: 'btn-shoot', on: { click: async () => { try { photo = await captureToJpeg(video, maxBytes); cleanup(); stepPreview(); } catch (e) { fail(t('Selfie problem'), e.message, null, stepCamera); } } } });
+    modal.setBody(h('p', {}, t('Take a clear selfie. It is stored privately for your supervisor.')), video, h('div', { class: 'form-actions' }, button(t('Back'), { on: { click: locate } }), shoot), fileInput);
+    try { stream = await startCamera(video); } catch (e) {
+      const msg = e instanceof CameraError && e.kind === 'DENIED' ? t('Camera permission denied. Allow camera access for this app in your browser/phone settings, then tap Retry.') : e.message;
+      modal.setBody(h('div', { class: 'alert alert-bad', role: 'alert', id: 'camera-error' }, h('strong', {}, t('Camera problem')), h('p', {}, msg)),
+        h('div', { class: 'form-actions' }, button(t('Close'), { on: { click: () => modal.close() } }), button(t('Retry'), { kind: 'primary', on: { click: stepCamera } }), button(t('Use camera app instead'), { on: { click: () => fileInput.click() } })), fileInput);
+    }
+  }
+  function stepPreview() {
+    const url = URL.createObjectURL(photo.blob);
+    modal.setBody(h('img', { class: 'selfie-preview', src: url, alt: t('Your selfie') }), h('p', { class: 'hint' }, `${Math.round(photo.bytes / 1024)} KB`),
+      h('div', { class: 'form-actions' }, button(t('Retake'), { on: { click: stepCamera } }), button(t('Check out now'), { kind: 'primary', big: true, id: 'btn-submit', on: { click: submit } })));
   }
   async function submit() {
     if (!isOnline()) return fail(t('You are offline'), t('Nothing was recorded. Check-out is only confirmed when the server receives it.'), null, submit);
     modal.setBody(spinner(t('Checking out...')));
     try {
-      fix = await freshFix(provider, fix); const res = await api.call('checkOut', fixPayload(fix));
+      fix = await freshFix(provider, fix); const res = await api.call('checkOut', { ...fixPayload(fix), ...(photo ? { selfie_base64: photo.base64, selfie_mime: photo.mime } : {}) }); cleanup();
       modal.setBody(h('div', { class: 'alert alert-ok', id: 'checkout-result' }, h('strong', {}, t('Checked out')), res.early_checkout_minutes > 0 ? h('p', {}, t('Early check-out: {n} minutes before shift end.', { n: res.early_checkout_minutes })) : null),
         h('div', { class: 'form-actions' }, button(t('Done'), { kind: 'primary', on: { click: () => { modal.close(); onDone(res); } } })));
     } catch (e) {
       if (e.code === 'OUTSIDE_GEOFENCE') return fail(t('You are outside the assigned branch.'), t('Check-out requires you to be at the branch.'), infoRows([['Current distance', `${Math.round((e.details || {}).distance_meters)} meters`], ['Required', `Within ${(e.details || {}).required_within_meters} meters`]]), locate);
+      if (e.code === 'SELFIE_REQUIRED') return fail(t('Selfie required'), errorMessage(e), null, stepCamera);
+      if (['STALE_LOCATION', 'LOW_ACCURACY', 'GPS_UNAVAILABLE'].includes(e.code)) return fail(t('Location problem'), errorMessage(e), null, locate);
       if (e.state) return fail(t('Location problem'), t(LOC_HELP[e.state] || LOC_HELP.UNAVAILABLE), null, locate);
       fail(['OFFLINE', 'NETWORK_ERROR', 'SERVER_UNAVAILABLE'].includes(e.code) ? t('Not checked out') : t('Check-out failed'), errorMessage(e), null, ['ALREADY_CHECKED_OUT', 'NOT_CHECKED_IN'].includes(e.code) ? null : submit);
     }
   }
-  modal = openModal({ title: t('Check Out'), body: spinner() }); locate(); return modal;
+  modal = openModal({ title: t('Check Out'), body: spinner(), onClose: cleanup }); locate(); return modal;
 }

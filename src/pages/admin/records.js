@@ -7,9 +7,9 @@ import { clean } from './lookups.js';
 import { createMap, drawBranches, drawPoint, fit } from './map.js';
 
 export const ATT_STATUS = ['', 'ON_TIME', 'LATE', 'PENDING', 'REJECTED', 'OUTSIDE_GEOFENCE', 'GPS_UNAVAILABLE'];
-export async function showSelfie(ctx, attendanceId) {
-  const m = openModal({ title: t('Check-in selfie'), body: spinner(), wide: false });
-  try { const r = await ctx.api.call('getSelfie', { attendance_id: attendanceId }); m.setBody(h('img', { class: 'selfie-preview', alt: t('Selfie'), src: `data:${r.mime};base64,${r.data_base64}` })); } catch (e) { m.close(); toastError(e); }
+export async function showSelfie(ctx, attendanceId, which = 'check_in') {
+  const m = openModal({ title: which === 'check_out' ? t('Check-out selfie') : t('Check-in selfie'), body: spinner(), wide: false });
+  try { const r = await ctx.api.call('getSelfie', { attendance_id: attendanceId, which }); m.setBody(h('img', { class: 'selfie-preview', alt: t('Selfie'), src: `data:${r.mime};base64,${r.data_base64}` })); } catch (e) { m.close(); toastError(e); }
 }
 
 export async function attendancePage(ctx) {
@@ -20,7 +20,7 @@ export async function attendancePage(ctx) {
     columns: [{ key: 'work_date', label: 'Date' }, { key: 'employee_id', label: 'Employee', render: (r) => h('a', { href: `#/employee?id=${r.employee_id}&date=${r.work_date}` }, `${r.employee_id} ${(l.employees.find((e) => e.employee_id === r.employee_id) || {}).employee_name || ''}`) },
       { key: 'check_in_time', label: 'Check-in', render: (r) => fmtTime(r.check_in_time) }, { key: 'check_out_time', label: 'Check-out', render: (r) => fmtTime(r.check_out_time) }, { key: 'attendance_status', label: 'Status', render: (r) => h('span', { class: 'badges' }, badge(r.attendance_status, r.attendance_status === 'LATE' ? `Late ${r.late_minutes} min` : undefined), (r.flags || []).map((f) => badge(f))) },
       { key: 'check_in_distance_meters', label: 'Check-in distance', render: (r) => (r.check_in_distance_meters != null ? `${Math.round(r.check_in_distance_meters)} m` : '-') }, { key: 'early_checkout_minutes', label: 'Early out', render: (r) => (r.early_checkout_minutes ? minutesText(r.early_checkout_minutes) : '-') },
-      { key: 'selfie', label: 'Selfie', render: (r) => (r.selfie_available && can('view_selfies') ? button(t('View'), { small: true, on: { click: () => showSelfie(ctx, r.attendance_id) } }) : '-') }],
+      { key: 'selfie', label: 'Selfie', render: (r) => (can('view_selfies') && (r.selfie_available || r.checkout_selfie_available) ? h('span', { class: 'btn-row' }, r.selfie_available ? button(t('View'), { small: true, on: { click: () => showSelfie(ctx, r.attendance_id) } }) : null, r.checkout_selfie_available ? button(t('View check-out'), { small: true, on: { click: () => showSelfie(ctx, r.attendance_id, 'check_out') } }) : null) : '-') }],
     async load(f, page) { const res = await ctx.api.call('getAttendance', { ...clean(f), page, page_size: 50 }); return { items: res.items, total: res.total, page: res.page, page_size: res.page_size }; }
   });
   return { el: h('div', {}, h('h1', {}, t('Attendance')), lp.el) };
