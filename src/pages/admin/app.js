@@ -17,13 +17,14 @@ import { reportsPage } from './reports.js';
 import { settingsPage } from './settings.js';
 import { adminsPage } from './admins.js';
 import { alertsPage } from './alerts.js';
+import { scheduleImportPage } from './schedule-import.js';
 
 export const ROUTES = [
   { path: 'dashboard', title: 'Dashboard', perm: 'view_current_status', page: dashboardPage, nav: true }, { path: 'live', title: 'Live Monitoring', perm: 'view_current_status', page: livePage, nav: true },
   { path: 'alerts', title: 'Alerts', perm: 'view_alerts', page: alertsPage, nav: true },
   { path: 'employees', title: 'Employees', perm: 'view_employees', page: employeesPage, nav: true }, { path: 'employee', title: 'Employee Details', perm: 'view_employees', page: employeeDetailPage },
   { path: 'branches', title: 'Branches', perm: 'view_branches', page: branchesPage, nav: true }, { path: 'shifts', title: 'Shifts', perm: 'view_shifts', page: shiftsPage, nav: true },
-  { path: 'assignments', title: 'Assignments', perm: 'view_shifts', page: assignmentsPage, nav: true }, { path: 'attendance', title: 'Attendance', perm: 'view_attendance', page: attendancePage, nav: true },
+  { path: 'assignments', title: 'Assignments', perm: 'view_shifts', page: assignmentsPage, nav: true }, { path: 'import', title: 'Schedule Import', perm: 'view_shifts', page: scheduleImportPage, nav: true }, { path: 'attendance', title: 'Attendance', perm: 'view_attendance', page: attendancePage, nav: true },
   { path: 'locations', title: 'Location History', perm: 'view_location_history', page: locationHistoryPage, nav: true }, { path: 'geofence', title: 'Geofence Events', perm: 'view_geofence_events', page: geofencePage, nav: true },
   { path: 'leaves', title: 'Leaves', perm: 'manage_leave', page: leavesPage, nav: true }, { path: 'reports', title: 'Reports', perm: 'view_reports', page: reportsPage, nav: true },
   { path: 'audit', title: 'Audit Logs', perm: 'view_audit_logs', page: auditPage, nav: true }, { path: 'settings', title: 'Settings', perm: 'view_settings', page: settingsPage, nav: true },
