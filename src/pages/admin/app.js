@@ -16,6 +16,7 @@ import { attendancePage, locationHistoryPage, geofencePage, leavesPage, auditPag
 import { reportsPage } from './reports.js';
 import { settingsPage } from './settings.js';
 import { adminsPage } from './admins.js';
+import { createNotificationBell } from '../../components/notifications.js';
 import { alertsPage } from './alerts.js';
 import { scheduleImportPage } from './schedule-import.js';
 
@@ -39,19 +40,22 @@ export function parseHash(hash) {
 export function mountAdminApp(root, deps = {}) {
   initLang();
   const api = deps.api || createApi('admin'), lookups = createLookups(api);
-  let current = null, notice = null;
-  const content = h('main', { id: 'main', class: 'content', tabindex: '-1' }), nav = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('Main navigation') }), who = h('span', { class: 'who' });
+  let current = null, notice = null, bell = null;
+  const content = h('main', { id: 'main', class: 'content', tabindex: '-1' }), nav = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('Main navigation') }), who = h('span', { class: 'who' }), bellBox = h('span', { id: 'bell-box' });
   const menuBtn = h('button', { class: 'icon-btn menu-btn', type: 'button', id: 'btn-menu', 'aria-label': t('Menu'), 'aria-expanded': 'false', on: { click: () => { const open = nav.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(open)); } } }, '☰');
-  const shell = h('div', { class: 'admin-shell' }, h('header', { class: 'app-header' }, menuBtn, h('div', { class: 'brand' }, h('img', { src: './assets/icons/icon-192.png', alt: '', width: 28, height: 28 }), h('span', {}, cfg().APP_NAME + ' - ' + t('Admin'))), who,
+  const shell = h('div', { class: 'admin-shell' }, h('header', { class: 'app-header' }, menuBtn, h('div', { class: 'brand' }, h('img', { src: './assets/icons/icon-192.png', alt: '', width: 28, height: 28 }), h('span', {}, cfg().APP_NAME + ' - ' + t('Admin'))), bellBox, who,
     button(t('Sign out'), { small: true, id: 'btn-logout', on: { click: async () => { cleanup(); await api.logout(); notice = null; boot(); } } })), nav, content);
   api.onSessionEnd((code) => { notice = errorMessage({ code }); cleanup(); boot(); });
 
+  function dropBell() { if (bell) { bell.destroy(); bell = null; } }
   function cleanup() { if (current && current.destroy) { try { current.destroy(); } catch (e) { /* ignore */ } } current = null; }
   function loginView() {
+    dropBell();
     const f = buildForm([{ name: 'username', label: 'Username', required: true, autocomplete: 'username' }, { name: 'password', label: 'Password', type: 'password', required: true, autocomplete: 'current-password', trim: false }], {}, { submitLabel: t('Sign in'), onSubmit: async (v) => { await api.login(v.username, v.password); notice = null; boot(); } });
     mount(root, h('main', { class: 'container narrow' }, h('section', { class: 'card login' }, h('h1', {}, cfg().APP_NAME), h('h2', {}, t('Administrator sign in')), notice ? h('div', { class: 'alert alert-warn', id: 'login-notice' }, notice) : null, f.el)));
   }
   function changePwView() {
+    dropBell();
     const f = buildForm([{ name: 'current', label: 'Current (temporary) password', type: 'password', required: true, trim: false, autocomplete: 'current-password' }, { name: 'next', label: 'New password', type: 'password', required: true, trim: false, autocomplete: 'new-password', hint: 'At least 8 characters with letters and digits.' }, { name: 'again', label: 'Repeat new password', type: 'password', required: true, trim: false, autocomplete: 'new-password' }], {}, {
       submitLabel: t('Change password'), onSubmit: async (v) => { if (v.next !== v.again) throw Object.assign(new Error(t('The new passwords do not match.')), { code: 'VALIDATION_ERROR' }); await api.changePassword(v.current, v.next); toast(t('Password changed'), 'ok'); boot(); } });
     mount(root, h('main', { class: 'container narrow' }, h('section', { class: 'card login' }, h('h1', {}, t('Choose a new password')), h('p', {}, t('You must change your password before using the admin console.')), f.el, button(t('Sign out'), { small: true, on: { click: async () => { await api.logout(); boot(); } } }))));
@@ -61,7 +65,7 @@ export function mountAdminApp(root, deps = {}) {
     if (s.user.must_change_password) return changePwView();
     try { const u = await api.refreshUser(); s.user = u; } catch (e) { if (!api.session()) return; /* offline: keep cached profile */ }
     const user = api.session().user, allowed = ROUTES.filter((r) => r.nav && user.permissions.includes(r.perm));
-    mount(who, user.name); mount(nav, allowed.map((r) => h('a', { href: `#/${r.path}`, dataset: { route: r.path } }, t(r.title)))); mount(root, shell);
+    if (bell) bell.destroy(); bell = createNotificationBell({ api, intervalMs: 300000 }); mount(bellBox, bell.el); mount(who, user.name); mount(nav, allowed.map((r) => h('a', { href: `#/${r.path}`, dataset: { route: r.path } }, t(r.title)))); mount(root, shell);
     if (!parseHash(globalThis.location.hash).path) globalThis.location.hash = `#/${allowed[0] ? allowed[0].path : 'dashboard'}`; else route();
   }
   async function route() {
