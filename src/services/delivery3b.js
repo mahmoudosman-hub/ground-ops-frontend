@@ -1,10 +1,9 @@
 /**
- * Ground OPS - Delivery 3b v2
- * - No floating buttons.
- * - Week Grid link injected into the sidebar.
- * - Delete buttons injected next to each Employee and Branch row.
- * - AR/EN toggle in the sidebar (bi-directional, no refresh needed).
- * - Clean selfies button inside the Selfie Checks page.
+ * Ground OPS - Delivery 3b v3
+ * - No floating buttons; sidebar links for Week Grid and Language.
+ * - Delete buttons ONLY on Employees and Branches pages.
+ * - Branch delete looks up the ID by name first (the list shows names, not IDs).
+ * - No delete buttons when an overlay (Selfie Checks, Week Grid, etc.) is open.
  * Self-contained. No imports.
  */
 (function () {
@@ -47,7 +46,7 @@
     return fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, token: sess.token, payload: payload || {}, client: 'delivery3b/2.0' }),
+      body: JSON.stringify({ action: action, token: sess.token, payload: payload || {}, client: 'delivery3b/3.0' }),
       redirect: 'follow',
       credentials: 'omit'
     }).then(function (r) { return r.json(); }).then(function (body) {
@@ -92,7 +91,6 @@
     'Total': 'الإجمالي', 'Notes': 'ملاحظات', 'Time': 'الوقت',
     'Week Grid': 'الجدول الأسبوعي', 'Language': 'اللغة', 'Actions': 'الإجراءات'
   };
-
   var LANG_KEY = 'gops.lang';
   function getLang() { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { return 'en'; } }
   function setLang(l) { try { localStorage.setItem(LANG_KEY, l); } catch (e) {} }
@@ -121,10 +119,7 @@
     btn.id = 'gops-lang-btn';
     btn.setAttribute('role', 'button');
     btn.style.cssText = 'cursor:pointer;padding:12px 16px;font-weight:700;border-top:1px solid rgba(0,0,0,.08);color:inherit;';
-    function render() {
-      var l = getLang();
-      btn.textContent = l === 'ar' ? '🌐 English' : '🌐 العربية';
-    }
+    function render() { btn.textContent = getLang() === 'ar' ? '🌐 English' : '🌐 العربية'; }
     btn.onclick = function () {
       var next = getLang() === 'ar' ? 'en' : 'ar';
       setLang(next);
@@ -135,7 +130,6 @@
     sidebar.appendChild(btn);
   }
 
-  // ======================= SIDEBAR FINDER =======================
   function findSidebar() {
     var sels = ['.sidebar', 'nav.sidebar', 'aside.sidebar', '#sidebar', '.sidenav', '.side-nav', 'aside', 'nav[role="navigation"]'];
     for (var i = 0; i < sels.length; i++) {
@@ -145,7 +139,7 @@
     return null;
   }
 
-  // ======================= WEEK GRID (full-page) =======================
+  // ======================= WEEK GRID =======================
   function openWeekGridFullPage() {
     var old = document.getElementById('gops-week-page'); if (old) old.remove();
     var page = document.createElement('div');
@@ -162,7 +156,6 @@
         '<label>From: <input type="date" id="gops-wg-from" style="padding:8px;border:1px solid #ccc;border-radius:6px"></label>' +
         '<label>To: <input type="date" id="gops-wg-to" style="padding:8px;border:1px solid #ccc;border-radius:6px"></label>' +
         '<button id="gops-wg-go" style="padding:10px 18px;border:0;border-radius:8px;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer">Load</button>' +
-        '<button id="gops-wg-print" style="padding:10px 18px;border:1px solid #ccc;border-radius:8px;background:#fff;font-weight:700;cursor:pointer">Print</button>' +
       '</div>' +
       '<div id="gops-wg-body" style="overflow:auto;border:1px solid #e5e5e5;border-radius:10px">Loading...</div>' +
       '</div>';
@@ -174,7 +167,6 @@
     page.querySelector('#gops-wg-to').value = next7;
     page.querySelector('#gops-wg-close').onclick = function () { page.remove(); };
     page.querySelector('#gops-wg-go').onclick = load;
-    page.querySelector('#gops-wg-print').onclick = function () { window.print(); };
 
     function load() {
       var from = page.querySelector('#gops-wg-from').value;
@@ -201,7 +193,7 @@
     load();
   }
 
-  // ======================= SIDEBAR INJECTIONS =======================
+  // ======================= SIDEBAR =======================
   function injectSidebarWeekGrid(sidebar) {
     if (sidebar.querySelector('[data-gops-item="week-grid"]')) return;
     var item = document.createElement('div');
@@ -213,19 +205,30 @@
     sidebar.appendChild(item);
   }
 
-  // ======================= INLINE DELETE BUTTONS =======================
-  function findTableRows(root) {
-    return Array.prototype.slice.call(root.querySelectorAll('table tbody tr'));
+  // ======================= DELETE BUTTONS =======================
+  // Returns true if any of our own overlays is open; those cover the underlying page.
+  function overlayOpen() {
+    return !!document.querySelector('#gops-week-page, #gops-clean-dialog, #gops-sc-admin-root');
   }
 
-  function injectRowDeleteButton(tr, kind, id) {
+  function currentPageTitle() {
+    var hs = document.querySelectorAll('h1, h2, h3');
+    for (var i = 0; i < hs.length; i++) {
+      var h = hs[i];
+      if (h.closest('.sidebar, nav, aside, [id^="gops-"]')) continue;
+      if (h.closest('#gops-week-page, #gops-sc-admin-root, #gops-clean-dialog')) continue;
+      var t = (h.textContent || '').trim();
+      if (t) return t.toLowerCase();
+    }
+    return '';
+  }
+
+  function injectRowDeleteButton(tr, kind, id, displayName) {
     if (tr.dataset.gopsDelInjected) return;
     tr.dataset.gopsDelInjected = '1';
     var cells = tr.querySelectorAll('td');
     if (!cells.length) return;
     var last = cells[cells.length - 1];
-    // If the last cell already has a delete button, skip
-    if (last.querySelector('.gops-del-btn')) return;
     var btn = document.createElement('button');
     btn.className = 'gops-del-btn';
     btn.textContent = '🗑';
@@ -233,69 +236,77 @@
     btn.style.cssText = 'padding:4px 10px;border:0;border-radius:6px;background:#fce4e4;color:#c00;cursor:pointer;font-weight:700;margin-left:6px;';
     btn.onclick = function (ev) {
       ev.stopPropagation(); ev.preventDefault();
-      var name = (cells[1] ? cells[1].textContent : cells[0].textContent).trim();
-      var word = kind === 'employee' ? 'employee ' + name + ' (' + id + ')' : 'branch ' + name + ' (' + id + ')';
+      var word = kind === 'employee' ? 'employee ' + displayName + ' (' + id + ')' : 'branch ' + displayName + ' (' + id + ')';
       if (prompt('Type DELETE to confirm deleting ' + word + ' and all related records:') !== 'DELETE') { toast('Cancelled', '#888'); return; }
+      btn.disabled = true; btn.textContent = '...';
       var action = kind === 'employee' ? 'deleteEmployee' : 'deleteBranch';
       var payload = kind === 'employee' ? { employee_id: id, confirm: true } : { branch_id: id, confirm: true };
       apiCall('admin', action, payload).then(function () {
-        toast('Deleted ' + name, '#1e8e3e');
+        toast('Deleted ' + displayName, '#1e8e3e');
         tr.style.opacity = '0.3';
-        tr.style.transition = 'opacity .3s';
         setTimeout(function () { tr.remove(); }, 300);
-      }).catch(function (e) { toast('Error: ' + (e.message || e.code), '#c00'); });
+      }).catch(function (e) {
+        btn.disabled = false; btn.textContent = '🗑';
+        toast('Error: ' + (e.message || e.code), '#c00');
+      });
     };
     last.appendChild(btn);
   }
 
-    function scanForDeletables() {
-    // Determine the current page from the main heading (skip sidebar headings)
-    var hs = document.querySelectorAll('h1, h2, h3');
-    var title = '';
-    for (var i = 0; i < hs.length; i++) {
-      var h = hs[i];
-      if (h.closest('.sidebar, nav, aside, [id^="gops-"]')) continue;
-      var t = (h.textContent || '').trim();
-      if (t) { title = t.toLowerCase(); break; }
-    }
+  // Called for branch pages: the displayed cell is the branch NAME, so look up the ID first.
+  function lookupBranchIdByName(name, cb) {
+    apiCall('admin', 'getBranches', {}).then(function (d) {
+      var list = d.branches || [];
+      var hit = null;
+      for (var i = 0; i < list.length; i++) {
+        if (String(list[i].branch_name).trim().toLowerCase() === String(name).trim().toLowerCase()) { hit = list[i]; break; }
+      }
+      cb(hit);
+    }).catch(function () { cb(null); });
+  }
+
+  function scanForDeletables() {
+    // Never inject when an overlay is open (it would target rows behind it).
+    if (overlayOpen()) return;
+
+    var title = currentPageTitle();
     var isEmpPage = /^employees?\b/.test(title);
     var isBrPage = /^branches?\b/.test(title);
 
-    // On any other page, remove every delete button we may have injected before
+    // Not on a supported page: remove anything we might have added
     if (!isEmpPage && !isBrPage) {
       document.querySelectorAll('.gops-del-btn').forEach(function (b) { b.remove(); });
-      document.querySelectorAll('tr[data-gops-scanned]').forEach(function (tr) { delete tr.dataset.gopsScanned; });
+      document.querySelectorAll('tr[data-gops-del-injected]').forEach(function (tr) { delete tr.dataset.gopsDelInjected; });
       return;
     }
 
-    findTableRows(document).forEach(function (tr) {
-      if (tr.dataset.gopsScanned) return;
+    var rows = document.querySelectorAll('table tbody tr');
+    Array.prototype.forEach.call(rows, function (tr) {
+      if (tr.dataset.gopsDelInjected) return;
       var cells = tr.querySelectorAll('td');
       if (cells.length < 2) return;
-      var c0 = (cells[0].textContent || '').trim();
 
       if (isEmpPage) {
-        // Employee page: first cell must be all-caps ID like ABDELRHMAN_NABIL
-        if (/^[A-Z][A-Z0-9_]{2,30}$/.test(c0) && !/^\d+$/.test(c0)) {
-          tr.dataset.gopsScanned = '1';
-          injectRowDeleteButton(tr, 'employee', c0);
-        }
-      } else if (isBrPage && c0) {
-        // Branch page: prefer a cell that looks like BR-xxxx; otherwise the first cell
-        var id = c0;
-        if (!/^BR[-_]/i.test(c0)) {
-          for (var k = 0; k < cells.length; k++) {
-            var txt = (cells[k].textContent || '').trim();
-            if (/^BR[-_][A-Z0-9-]{2,40}$/i.test(txt)) { id = txt; break; }
-          }
-        }
-        tr.dataset.gopsScanned = '1';
-        injectRowDeleteButton(tr, 'branch', id);
+        var id = (cells[0].textContent || '').trim();
+        var name = (cells[1] ? cells[1].textContent : '').trim();
+        // Employee list shows the ID in the first cell, in ALL CAPS with _ or digits.
+        if (/^[A-Z][A-Z0-9_-]{2,30}$/.test(id)) injectRowDeleteButton(tr, 'employee', id, name || id);
+        return;
+      }
+
+      if (isBrPage) {
+        var nameBr = (cells[0].textContent || '').trim();
+        if (!nameBr || nameBr === '-') return;
+        // Look up the actual ID now, then attach the button.
+        lookupBranchIdByName(nameBr, function (b) {
+          if (!b) { toast('Branch "' + nameBr + '" was not found on the server.', '#c00'); return; }
+          injectRowDeleteButton(tr, 'branch', b.branch_id, b.branch_name);
+        });
       }
     });
   }
 
-  // ======================= CLEAN SELFIES BUTTON (inside Selfie Checks) =======================
+  // ======================= CLEAN SELFIES =======================
   function openCleanSelfiesDialog() {
     var old = document.getElementById('gops-clean-dialog'); if (old) old.remove();
     var d = document.createElement('div');
@@ -356,17 +367,16 @@
   }
 
   function injectCleanSelfiesButton() {
-    // Look for the "Selfie Checks" page and add a Clean button next to Refresh
+    if (overlayOpen()) return;
     var buttons = document.querySelectorAll('button');
     var refreshBtn = null;
     for (var i = 0; i < buttons.length; i++) {
       var t = (buttons[i].textContent || '').trim().toLowerCase();
-      if (t === 'refresh' && buttons[i].id !== 'gops-clean-inserted') { refreshBtn = buttons[i]; break; }
+      if (t === 'refresh') { refreshBtn = buttons[i]; break; }
     }
     if (!refreshBtn) return;
     var parent = refreshBtn.parentNode;
-    if (!parent) return;
-    if (parent.querySelector('.gops-clean-btn')) return;
+    if (!parent || parent.querySelector('.gops-clean-btn')) return;
     var btn = document.createElement('button');
     btn.className = 'gops-clean-btn';
     btn.textContent = '🧹 Clean';
@@ -375,46 +385,30 @@
     parent.appendChild(btn);
   }
 
-  // ======================= OBSERVER =======================
-  function boot() {
+  // ======================= BOOT =======================
+  function tick() {
     var sidebar = findSidebar();
-    if (sidebar) {
-      injectSidebarWeekGrid(sidebar);
-      installLangButton(sidebar);
-    }
+    if (sidebar) { injectSidebarWeekGrid(sidebar); installLangButton(sidebar); }
     scanForDeletables();
     injectCleanSelfiesButton();
+  }
 
-    // Re-run on any DOM mutation (SPA re-renders)
+  function boot() {
+    tick();
     var pending = false;
     var obs = new MutationObserver(function () {
       if (pending) return;
       pending = true;
-      setTimeout(function () {
-        pending = false;
-        var s = findSidebar();
-        if (s) { injectSidebarWeekGrid(s); installLangButton(s); }
-        scanForDeletables();
-        injectCleanSelfiesButton();
-      }, 300);
+      setTimeout(function () { pending = false; tick(); }, 250);
     });
     obs.observe(document.body, { childList: true, subtree: true });
-
-    // Also poll occasionally for safety
-    setInterval(function () {
-      var s = findSidebar();
-      if (s) { injectSidebarWeekGrid(s); installLangButton(s); }
-      scanForDeletables();
-      injectCleanSelfiesButton();
-    }, 5000);
-
-    // Apply saved language on load
+    setInterval(tick, 4000);
     var l = getLang();
     if (l === 'ar') setTimeout(function () { walkAndTranslate('ar'); }, 800);
   }
 
   loadConfigOnce().then(function () {
-    if (!isAdminPage()) return; // employee page uses nothing from this file
+    if (!isAdminPage()) return;
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
   });
