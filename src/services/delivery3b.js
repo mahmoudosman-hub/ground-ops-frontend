@@ -1,6 +1,10 @@
 /**
- * Ground OPS - Delivery 3b
- * Adds: Clean selfie checks, Data admin (delete), Week grid, AR/EN toggle.
+ * Ground OPS - Delivery 3b v2
+ * - No floating buttons.
+ * - Week Grid link injected into the sidebar.
+ * - Delete buttons injected next to each Employee and Branch row.
+ * - AR/EN toggle in the sidebar (bi-directional, no refresh needed).
+ * - Clean selfies button inside the Selfie Checks page.
  * Self-contained. No imports.
  */
 (function () {
@@ -28,8 +32,7 @@
     var stores = [window.localStorage, window.sessionStorage].filter(Boolean);
     for (var i = 0; i < stores.length; i++) {
       try {
-        var raw = stores[i].getItem(key);
-        if (!raw) continue;
+        var raw = stores[i].getItem(key); if (!raw) continue;
         var v = JSON.parse(raw);
         if (v && v.token && Date.parse(v.expires_at) > Date.now()) return v;
       } catch (e) {}
@@ -44,12 +47,10 @@
     return fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, token: sess.token, payload: payload || {}, client: 'delivery3b/1.0' }),
+      body: JSON.stringify({ action: action, token: sess.token, payload: payload || {}, client: 'delivery3b/2.0' }),
       redirect: 'follow',
       credentials: 'omit'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (body) {
+    }).then(function (r) { return r.json(); }).then(function (body) {
       if (!body || body.success !== true) {
         var e = new Error((body && body.message) || 'Request failed');
         e.code = (body && body.error_code) || 'ERROR';
@@ -71,179 +72,7 @@
     setTimeout(function () { el.remove(); }, 3400);
   }
 
-  function modal(title, html) {
-    var old = document.getElementById('gops-d3b-modal');
-    if (old) old.remove();
-    var m = document.createElement('div');
-    m.id = 'gops-d3b-modal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99997;display:flex;align-items:center;justify-content:center;padding:16px;';
-    m.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:1000px;width:100%;max-height:92vh;overflow:auto;padding:20px;font:14px/1.5 system-ui,sans-serif;color:#111">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-      '<h2 style="margin:0;font-size:20px">' + esc(title) + '</h2>' +
-      '<button class="gops-d3b-close" style="padding:8px 14px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:700">Close</button>' +
-      '</div>' + html + '</div>';
-    document.body.appendChild(m);
-    m.querySelector('.gops-d3b-close').onclick = function () { m.remove(); };
-    return m;
-  }
-
-  // ============ Clean selfie checks ============
-  function openCleanSelfie() {
-    var m = modal('Clean selfie checks',
-      '<p style="color:#666">Removes PENDING selfie checks that are outside the shift window. DONE and MISSED are never touched.</p>' +
-      '<label style="display:block;margin:10px 0 6px">Employee ID</label>' +
-      '<input id="gops-clean-emp" type="text" placeholder="DIAA_MAHMOUD" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:monospace;text-transform:uppercase">' +
-      '<label style="display:block;margin:14px 0 6px">Date</label>' +
-      '<input id="gops-clean-date" type="date" style="padding:10px;border:1px solid #ccc;border-radius:6px">' +
-      '<div style="margin-top:18px;display:flex;gap:8px">' +
-      '<button id="gops-clean-preview" style="flex:1;padding:12px;border:0;border-radius:8px;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer">Preview</button>' +
-      '<button id="gops-clean-run" style="flex:1;padding:12px;border:0;border-radius:8px;background:#d33;color:#fff;font-weight:700;cursor:pointer">Clean</button>' +
-      '</div>' +
-      '<div id="gops-clean-result" style="margin-top:16px"></div>');
-
-    m.querySelector('#gops-clean-date').value = new Date().toISOString().slice(0, 10);
-
-    m.querySelector('#gops-clean-preview').onclick = function () {
-      var emp = m.querySelector('#gops-clean-emp').value.trim().toUpperCase();
-      var date = m.querySelector('#gops-clean-date').value;
-      if (!emp || !date) { toast('Fill both fields', '#c00'); return; }
-      var out = m.querySelector('#gops-clean-result');
-      out.innerHTML = 'Loading...';
-      apiCall('admin', 'getSelfieDebug', { employee_id: emp, date: date }).then(function (d) {
-        var inw = 0, outw = 0, done = 0, missed = 0;
-        (d.selfie_checks || []).forEach(function (sc) {
-          if (sc.status === 'DONE') done++;
-          else if (sc.status === 'MISSED') missed++;
-          else if (sc.in_window) inw++;
-          else outw++;
-        });
-        var rows = (d.attendances || []).map(function (a) {
-          return '<tr><td style="padding:6px;border-bottom:1px solid #eee">' + esc(a.shift_name || '-') + '</td>' +
-            '<td style="padding:6px;border-bottom:1px solid #eee">' + esc(a.shift_definition || '-') + '</td>' +
-            '<td style="padding:6px;border-bottom:1px solid #eee">' + esc((a.window_start || '').slice(11, 16)) + ' - ' + esc((a.window_end || '').slice(11, 16)) + ' (UTC)</td></tr>';
-        }).join('');
-        out.innerHTML = '<div style="background:#f5f5f5;padding:12px;border-radius:8px;margin-bottom:10px">' +
-          '<b>Summary</b><br>' +
-          'In window (PENDING): ' + inw + '<br>' +
-          '<b style="color:#d33">Outside window (PENDING, will be removed): ' + outw + '</b><br>' +
-          'DONE (untouched): ' + done + '<br>' +
-          'MISSED (untouched): ' + missed +
-          '</div>' +
-          (rows ? '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f5f5f5"><th style="text-align:left;padding:6px">Shift</th><th style="text-align:left;padding:6px">Definition</th><th style="text-align:left;padding:6px">Window</th></tr></thead><tbody>' + rows + '</tbody></table>' : '');
-      }).catch(function (e) {
-        out.innerHTML = '<p style="color:#c00">Error: ' + esc(e.message || e.code) + '</p>';
-      });
-    };
-
-    m.querySelector('#gops-clean-run').onclick = function () {
-      var emp = m.querySelector('#gops-clean-emp').value.trim().toUpperCase();
-      var date = m.querySelector('#gops-clean-date').value;
-      if (!emp || !date) { toast('Fill both fields', '#c00'); return; }
-      if (!confirm('Delete PENDING selfie checks outside the shift window for ' + emp + ' on ' + date + '?')) return;
-      var out = m.querySelector('#gops-clean-result');
-      out.innerHTML = 'Working...';
-      apiCall('admin', 'cleanSelfieChecks', { employee_id: emp, date: date }).then(function (d) {
-        toast('Removed ' + d.removed + ' check(s)', '#1e8e3e');
-        out.innerHTML = '<div style="background:#d4edda;padding:12px;border-radius:8px;color:#155724"><b>Done.</b> Removed ' + d.removed + ', kept ' + d.kept + '.</div>';
-      }).catch(function (e) {
-        out.innerHTML = '<p style="color:#c00">Error: ' + esc(e.message || e.code) + '</p>';
-      });
-    };
-  }
-
-  // ============ Data admin ============
-  function openDataAdmin() {
-    var m = modal('Data admin',
-      '<p style="color:#666">Delete an employee or a branch and all their related records. This cannot be undone.</p>' +
-      '<div style="display:flex;gap:10px;margin-bottom:14px">' +
-      '<button id="gops-da-tab-emp" style="flex:1;padding:10px;border:0;border-radius:8px;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer">Employees</button>' +
-      '<button id="gops-da-tab-br" style="flex:1;padding:10px;border:0;border-radius:8px;background:#eee;color:#111;font-weight:700;cursor:pointer">Branches</button>' +
-      '</div>' +
-      '<div id="gops-da-body"></div>');
-
-    function tabEmp() {
-      m.querySelector('#gops-da-tab-emp').style.background = '#0a84ff'; m.querySelector('#gops-da-tab-emp').style.color = '#fff';
-      m.querySelector('#gops-da-tab-br').style.background = '#eee'; m.querySelector('#gops-da-tab-br').style.color = '#111';
-      var body = m.querySelector('#gops-da-body'); body.innerHTML = 'Loading...';
-      apiCall('admin', 'getEmployees', { page_size: 500 }).then(function (d) {
-        var rows = (d.items || []).map(function (e) {
-          return '<tr><td style="padding:8px;border-bottom:1px solid #eee">' + esc(e.employee_id) + '</td>' +
-            '<td style="padding:8px;border-bottom:1px solid #eee">' + esc(e.employee_name) + '</td>' +
-            '<td style="padding:8px;border-bottom:1px solid #eee">' + esc(e.status) + '</td>' +
-            '<td style="padding:8px;border-bottom:1px solid #eee"><button class="gops-da-del-emp" data-id="' + esc(e.employee_id) + '" data-name="' + esc(e.employee_name) + '" style="padding:6px 12px;border:0;border-radius:6px;background:#d33;color:#fff;cursor:pointer;font-weight:700">Delete</button></td></tr>';
-        }).join('');
-        body.innerHTML = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f5f5f5"><th style="text-align:left;padding:8px">ID</th><th style="text-align:left;padding:8px">Name</th><th style="text-align:left;padding:8px">Status</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
-        body.querySelectorAll('.gops-da-del-emp').forEach(function (b) { b.onclick = function () { deleteEmp(b.getAttribute('data-id'), b.getAttribute('data-name')); }; });
-      }).catch(function (e) { body.innerHTML = '<p style="color:#c00">' + esc(e.message) + '</p>'; });
-    }
-    function tabBr() {
-      m.querySelector('#gops-da-tab-br').style.background = '#0a84ff'; m.querySelector('#gops-da-tab-br').style.color = '#fff';
-      m.querySelector('#gops-da-tab-emp').style.background = '#eee'; m.querySelector('#gops-da-tab-emp').style.color = '#111';
-      var body = m.querySelector('#gops-da-body'); body.innerHTML = 'Loading...';
-      apiCall('admin', 'getBranches', {}).then(function (d) {
-        var rows = (d.branches || []).map(function (b) {
-          return '<tr><td style="padding:8px;border-bottom:1px solid #eee">' + esc(b.branch_id) + '</td>' +
-            '<td style="padding:8px;border-bottom:1px solid #eee">' + esc(b.branch_name) + '</td>' +
-            '<td style="padding:8px;border-bottom:1px solid #eee">' + esc(b.status) + '</td>' +
-            '<td style="padding:8px;border-bottom:1px solid #eee"><button class="gops-da-del-br" data-id="' + esc(b.branch_id) + '" data-name="' + esc(b.branch_name) + '" style="padding:6px 12px;border:0;border-radius:6px;background:#d33;color:#fff;cursor:pointer;font-weight:700">Delete</button></td></tr>';
-        }).join('');
-        body.innerHTML = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f5f5f5"><th style="text-align:left;padding:8px">ID</th><th style="text-align:left;padding:8px">Name</th><th style="text-align:left;padding:8px">Status</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
-        body.querySelectorAll('.gops-da-del-br').forEach(function (b) { b.onclick = function () { deleteBr(b.getAttribute('data-id'), b.getAttribute('data-name')); }; });
-      }).catch(function (e) { body.innerHTML = '<p style="color:#c00">' + esc(e.message) + '</p>'; });
-    }
-    function deleteEmp(id, name) {
-      if (prompt('Type DELETE to confirm deleting employee ' + name + ' (' + id + ') and all related data:') !== 'DELETE') { toast('Cancelled', '#888'); return; }
-      apiCall('admin', 'deleteEmployee', { employee_id: id, confirm: true }).then(function () { toast('Deleted ' + name, '#1e8e3e'); tabEmp(); }).catch(function (e) { toast('Error: ' + (e.message || e.code), '#c00'); });
-    }
-    function deleteBr(id, name) {
-      if (prompt('Type DELETE to confirm deleting branch ' + name + ' (' + id + ') and all related data:') !== 'DELETE') { toast('Cancelled', '#888'); return; }
-      apiCall('admin', 'deleteBranch', { branch_id: id, confirm: true }).then(function () { toast('Deleted ' + name, '#1e8e3e'); tabBr(); }).catch(function (e) { toast('Error: ' + (e.message || e.code), '#c00'); });
-    }
-
-    m.querySelector('#gops-da-tab-emp').onclick = tabEmp;
-    m.querySelector('#gops-da-tab-br').onclick = tabBr;
-    tabEmp();
-  }
-
-  // ============ Week grid ============
-  function openWeekGrid() {
-    var m = modal('Week grid',
-      '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">' +
-      '<label>From: <input type="date" id="gops-wg-from" style="padding:8px;border:1px solid #ccc;border-radius:6px"></label>' +
-      '<label>To: <input type="date" id="gops-wg-to" style="padding:8px;border:1px solid #ccc;border-radius:6px"></label>' +
-      '<button id="gops-wg-go" style="padding:9px 16px;border:0;border-radius:8px;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer">Load</button>' +
-      '</div>' +
-      '<div id="gops-wg-body" style="overflow:auto">Loading...</div>');
-    var today = new Date().toISOString().slice(0, 10);
-    var next7 = new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10);
-    m.querySelector('#gops-wg-from').value = today;
-    m.querySelector('#gops-wg-to').value = next7;
-
-    function load() {
-      var from = m.querySelector('#gops-wg-from').value, to = m.querySelector('#gops-wg-to').value;
-      var body = m.querySelector('#gops-wg-body'); body.innerHTML = 'Loading...';
-      apiCall('admin', 'getWeekGrid', { date_from: from, date_to: to }).then(function (d) {
-        var dates = d.dates || [];
-        var header = '<th style="text-align:left;padding:8px;border-bottom:2px solid #333;position:sticky;left:0;background:#fff">Employee</th>';
-        dates.forEach(function (dt) { header += '<th style="padding:8px;border-bottom:2px solid #333;min-width:130px;text-align:left">' + esc(dt) + '</th>'; });
-        var rows = (d.rows || []).map(function (r) {
-          var cells = '<td style="padding:8px;border-bottom:1px solid #eee;position:sticky;left:0;background:#fff;font-weight:600">' + esc(r.employee_name) + '<br><span style="color:#888;font-weight:400;font-size:12px">' + esc(r.employee_id) + '</span></td>';
-          dates.forEach(function (dt) {
-            var v = r.days[dt];
-            if (!v) { cells += '<td style="padding:8px;border-bottom:1px solid #eee;color:#bbb">—</td>'; return; }
-            if (v.leave) { cells += '<td style="padding:8px;border-bottom:1px solid #eee;color:#a60;font-weight:600">' + esc(v.shift_name) + '</td>'; return; }
-            cells += '<td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">' + esc(v.shift_name) + '<br><span style="color:#666">' + esc(v.start + '-' + v.end) + '</span><br><span style="color:#888">' + esc(v.branch) + '</span></td>';
-          });
-          return '<tr>' + cells + '</tr>';
-        }).join('');
-        body.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f5f5">' + header + '</tr></thead><tbody>' + rows + '</tbody></table>';
-      }).catch(function (e) { body.innerHTML = '<p style="color:#c00">' + esc(e.message || e.code) + '</p>'; });
-    }
-    m.querySelector('#gops-wg-go').onclick = load;
-    load();
-  }
-
-  // ============ AR/EN toggle ============
+  // ======================= LANGUAGE =======================
   var AR = {
     'Dashboard': 'لوحة القيادة', 'Live Monitoring': 'المراقبة المباشرة',
     'Requests': 'الطلبات', 'Alerts': 'التنبيهات', 'Employees': 'الموظفون',
@@ -259,72 +88,312 @@
     'Employee': 'الموظف', 'Date': 'التاريخ', 'Branch': 'الفرع', 'Shift': 'الوردية',
     'Sign in': 'تسجيل الدخول', 'Sign out': 'تسجيل الخروج',
     'Password': 'كلمة المرور', 'Username': 'اسم المستخدم',
-    'Employee ID': 'رقم الموظف', 'Remember me': 'تذكرني'
+    'Employee ID': 'رقم الموظف', 'Remember me': 'تذكرني',
+    'Total': 'الإجمالي', 'Notes': 'ملاحظات', 'Time': 'الوقت',
+    'Week Grid': 'الجدول الأسبوعي', 'Language': 'اللغة', 'Actions': 'الإجراءات'
   };
-  var EN = {}; Object.keys(AR).forEach(function (k) { EN[k] = k; });
 
-  function applyLang(lang) {
-    document.documentElement.lang = lang;
-    document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
-    try { localStorage.setItem('gops.lang', lang); } catch (e) {}
+  var LANG_KEY = 'gops.lang';
+  function getLang() { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { return 'en'; } }
+  function setLang(l) { try { localStorage.setItem(LANG_KEY, l); } catch (e) {} }
+
+  function walkAndTranslate(lang) {
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-    var nodes = [], n;
-    while ((n = walker.nextNode())) { var t = n.nodeValue.trim(); if (t && t.length < 60) nodes.push(n); }
-    var target = lang === 'ar' ? AR : EN;
-    var other = lang === 'ar' ? EN : AR;
-    nodes.forEach(function (node) {
-      var t = node.nodeValue.trim();
-      if (other[t]) { node.nodeValue = node.nodeValue.replace(t, target[other[t]]); return; }
-      if (target[t]) { node.nodeValue = node.nodeValue.replace(t, target[t]); return; }
+    var n;
+    while ((n = walker.nextNode())) {
+      var p = n.parentNode;
+      if (p && (p.id || '').indexOf('gops-') === 0) continue;
+      if (n.__gops_orig === undefined) { try { n.__gops_orig = n.nodeValue; } catch (e) { continue; } }
+      var orig = n.__gops_orig;
+      if (!orig) continue;
+      var trimmed = orig.trim();
+      if (!trimmed || trimmed.length > 60) continue;
+      if (lang === 'ar' && AR[trimmed]) n.nodeValue = orig.replace(trimmed, AR[trimmed]);
+      else n.nodeValue = orig;
+    }
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+  }
+
+  function installLangButton(sidebar) {
+    if (document.getElementById('gops-lang-btn')) return;
+    var btn = document.createElement('div');
+    btn.id = 'gops-lang-btn';
+    btn.setAttribute('role', 'button');
+    btn.style.cssText = 'cursor:pointer;padding:12px 16px;font-weight:700;border-top:1px solid rgba(0,0,0,.08);color:inherit;';
+    function render() {
+      var l = getLang();
+      btn.textContent = l === 'ar' ? '🌐 English' : '🌐 العربية';
+    }
+    btn.onclick = function () {
+      var next = getLang() === 'ar' ? 'en' : 'ar';
+      setLang(next);
+      walkAndTranslate(next);
+      render();
+    };
+    render();
+    sidebar.appendChild(btn);
+  }
+
+  // ======================= SIDEBAR FINDER =======================
+  function findSidebar() {
+    var sels = ['.sidebar', 'nav.sidebar', 'aside.sidebar', '#sidebar', '.sidenav', '.side-nav', 'aside', 'nav[role="navigation"]'];
+    for (var i = 0; i < sels.length; i++) {
+      var el = document.querySelector(sels[i]);
+      if (el && el.querySelectorAll('a, button, li').length >= 3) return el;
+    }
+    return null;
+  }
+
+  // ======================= WEEK GRID (full-page) =======================
+  function openWeekGridFullPage() {
+    var old = document.getElementById('gops-week-page'); if (old) old.remove();
+    var page = document.createElement('div');
+    page.id = 'gops-week-page';
+    page.dir = getLang() === 'ar' ? 'rtl' : 'ltr';
+    page.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:99996;overflow:auto;padding:24px;font:14px/1.5 system-ui,sans-serif;color:#111;';
+    page.innerHTML =
+      '<div style="max-width:1600px;margin:0 auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap">' +
+        '<h1 style="margin:0;font-size:24px">📅 Week Grid</h1>' +
+        '<button id="gops-wg-close" style="padding:10px 18px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:700">Close</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">' +
+        '<label>From: <input type="date" id="gops-wg-from" style="padding:8px;border:1px solid #ccc;border-radius:6px"></label>' +
+        '<label>To: <input type="date" id="gops-wg-to" style="padding:8px;border:1px solid #ccc;border-radius:6px"></label>' +
+        '<button id="gops-wg-go" style="padding:10px 18px;border:0;border-radius:8px;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer">Load</button>' +
+        '<button id="gops-wg-print" style="padding:10px 18px;border:1px solid #ccc;border-radius:8px;background:#fff;font-weight:700;cursor:pointer">Print</button>' +
+      '</div>' +
+      '<div id="gops-wg-body" style="overflow:auto;border:1px solid #e5e5e5;border-radius:10px">Loading...</div>' +
+      '</div>';
+    document.body.appendChild(page);
+
+    var today = new Date().toISOString().slice(0, 10);
+    var next7 = new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10);
+    page.querySelector('#gops-wg-from').value = today;
+    page.querySelector('#gops-wg-to').value = next7;
+    page.querySelector('#gops-wg-close').onclick = function () { page.remove(); };
+    page.querySelector('#gops-wg-go').onclick = load;
+    page.querySelector('#gops-wg-print').onclick = function () { window.print(); };
+
+    function load() {
+      var from = page.querySelector('#gops-wg-from').value;
+      var to = page.querySelector('#gops-wg-to').value;
+      var body = page.querySelector('#gops-wg-body');
+      body.innerHTML = '<div style="padding:20px">Loading...</div>';
+      apiCall('admin', 'getWeekGrid', { date_from: from, date_to: to }).then(function (d) {
+        var dates = d.dates || [];
+        var header = '<th style="text-align:left;padding:10px;border-bottom:2px solid #333;position:sticky;left:0;top:0;background:#f5f5f5;z-index:3;min-width:200px">Employee</th>';
+        dates.forEach(function (dt) { header += '<th style="padding:10px;border-bottom:2px solid #333;top:0;background:#f5f5f5;min-width:140px;text-align:left;position:sticky;top:0;z-index:2">' + esc(dt) + '</th>'; });
+        var rows = (d.rows || []).map(function (r) {
+          var cells = '<td style="padding:10px;border-bottom:1px solid #eee;position:sticky;left:0;background:#fff;z-index:1;font-weight:600">' + esc(r.employee_name) + '<br><span style="color:#888;font-weight:400;font-size:12px">' + esc(r.employee_id) + '</span></td>';
+          dates.forEach(function (dt) {
+            var v = r.days[dt];
+            if (!v) { cells += '<td style="padding:10px;border-bottom:1px solid #eee;color:#bbb">—</td>'; return; }
+            if (v.leave) { cells += '<td style="padding:10px;border-bottom:1px solid #eee;color:#a60;font-weight:600">' + esc(v.shift_name) + '</td>'; return; }
+            cells += '<td style="padding:10px;border-bottom:1px solid #eee;font-size:12px">' + esc(v.shift_name) + '<br><span style="color:#666">' + esc(v.start + '-' + v.end) + '</span><br><span style="color:#888">' + esc(v.branch) + '</span></td>';
+          });
+          return '<tr>' + cells + '</tr>';
+        }).join('');
+        body.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:' + (200 + dates.length * 150) + 'px"><thead><tr style="background:#f5f5f5">' + header + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      }).catch(function (e) { body.innerHTML = '<div style="padding:20px;color:#c00">' + esc(e.message || e.code) + '</div>'; });
+    }
+    load();
+  }
+
+  // ======================= SIDEBAR INJECTIONS =======================
+  function injectSidebarWeekGrid(sidebar) {
+    if (sidebar.querySelector('[data-gops-item="week-grid"]')) return;
+    var item = document.createElement('div');
+    item.setAttribute('data-gops-item', 'week-grid');
+    item.setAttribute('role', 'button');
+    item.style.cssText = 'cursor:pointer;padding:12px 16px;font-weight:600;color:inherit;';
+    item.textContent = '📅 Week Grid';
+    item.onclick = function () { openWeekGridFullPage(); };
+    sidebar.appendChild(item);
+  }
+
+  // ======================= INLINE DELETE BUTTONS =======================
+  function findTableRows(root) {
+    return Array.prototype.slice.call(root.querySelectorAll('table tbody tr'));
+  }
+
+  function injectRowDeleteButton(tr, kind, id) {
+    if (tr.dataset.gopsDelInjected) return;
+    tr.dataset.gopsDelInjected = '1';
+    var cells = tr.querySelectorAll('td');
+    if (!cells.length) return;
+    var last = cells[cells.length - 1];
+    // If the last cell already has a delete button, skip
+    if (last.querySelector('.gops-del-btn')) return;
+    var btn = document.createElement('button');
+    btn.className = 'gops-del-btn';
+    btn.textContent = '🗑';
+    btn.title = 'Delete';
+    btn.style.cssText = 'padding:4px 10px;border:0;border-radius:6px;background:#fce4e4;color:#c00;cursor:pointer;font-weight:700;margin-left:6px;';
+    btn.onclick = function (ev) {
+      ev.stopPropagation(); ev.preventDefault();
+      var name = (cells[1] ? cells[1].textContent : cells[0].textContent).trim();
+      var word = kind === 'employee' ? 'employee ' + name + ' (' + id + ')' : 'branch ' + name + ' (' + id + ')';
+      if (prompt('Type DELETE to confirm deleting ' + word + ' and all related records:') !== 'DELETE') { toast('Cancelled', '#888'); return; }
+      var action = kind === 'employee' ? 'deleteEmployee' : 'deleteBranch';
+      var payload = kind === 'employee' ? { employee_id: id, confirm: true } : { branch_id: id, confirm: true };
+      apiCall('admin', action, payload).then(function () {
+        toast('Deleted ' + name, '#1e8e3e');
+        tr.style.opacity = '0.3';
+        tr.style.transition = 'opacity .3s';
+        setTimeout(function () { tr.remove(); }, 300);
+      }).catch(function (e) { toast('Error: ' + (e.message || e.code), '#c00'); });
+    };
+    last.appendChild(btn);
+  }
+
+  function scanForDeletables() {
+    var path = window.location.hash || window.location.pathname;
+    // Heuristic: if we're on Employees page, inject delete buttons.
+    // We detect by finding a table whose rows have employee_id-like first column.
+    findTableRows(document).forEach(function (tr) {
+      if (tr.dataset.gopsScanned) return;
+      var cells = tr.querySelectorAll('td');
+      if (cells.length < 2) return;
+      var c0 = (cells[0].textContent || '').trim();
+      var c1 = (cells[1].textContent || '').trim();
+      // Employee row: first cell looks like an employee_id
+      if (/^[A-Z][A-Z0-9_]{2,30}$/.test(c0) && c1 && !/^\d+$/.test(c1)) {
+        tr.dataset.gopsScanned = '1';
+        injectRowDeleteButton(tr, 'employee', c0);
+        return;
+      }
+      // Branch row: first cell often starts with BR- OR is a name and there's a lat/lng column
+      if (/^BR[-_]/.test(c0) || (/^[A-Z][A-Za-z0-9_ -]{2,40}$/.test(c0) && cells.length >= 5)) {
+        tr.dataset.gopsScanned = '1';
+        injectRowDeleteButton(tr, 'branch', c0);
+      }
     });
   }
 
-  function installLangToggle() {
-    if (document.getElementById('gops-lang-btn')) return;
-    var btn = document.createElement('button');
-    btn.id = 'gops-lang-btn';
-    btn.title = 'Language / اللغة';
-    var cur = 'en';
-    try { cur = localStorage.getItem('gops.lang') || 'en'; } catch (e) {}
-    btn.textContent = cur === 'ar' ? 'EN' : 'ع';
-    btn.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99992;width:48px;height:48px;border-radius:50%;border:0;background:#111;color:#fff;font-size:16px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.3);cursor:pointer;';
-    btn.onclick = function () {
-      cur = cur === 'en' ? 'ar' : 'en';
-      applyLang(cur);
-      btn.textContent = cur === 'ar' ? 'EN' : 'ع';
+  // ======================= CLEAN SELFIES BUTTON (inside Selfie Checks) =======================
+  function openCleanSelfiesDialog() {
+    var old = document.getElementById('gops-clean-dialog'); if (old) old.remove();
+    var d = document.createElement('div');
+    d.id = 'gops-clean-dialog';
+    d.dir = getLang() === 'ar' ? 'rtl' : 'ltr';
+    d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99997;display:flex;align-items:center;justify-content:center;padding:16px;';
+    d.innerHTML =
+      '<div style="background:#fff;border-radius:12px;max-width:520px;width:100%;padding:22px;font:14px/1.5 system-ui,sans-serif;color:#111">' +
+      '<h2 style="margin:0 0 8px;font-size:20px">🧹 Clean selfie checks</h2>' +
+      '<p style="color:#666;margin:0 0 14px">Removes PENDING selfie checks that are outside the shift window. DONE and MISSED are never touched.</p>' +
+      '<label style="display:block;margin-bottom:6px;font-weight:600">Employee ID</label>' +
+      '<input id="gops-clean-emp" type="text" placeholder="e.g. DIAA_MAHMOUD" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:monospace;text-transform:uppercase;box-sizing:border-box">' +
+      '<label style="display:block;margin:14px 0 6px;font-weight:600">Date</label>' +
+      '<input id="gops-clean-date" type="date" style="padding:10px;border:1px solid #ccc;border-radius:6px;width:100%;box-sizing:border-box">' +
+      '<div style="margin-top:18px;display:flex;gap:8px;justify-content:flex-end">' +
+      '<button id="gops-clean-cancel" style="padding:10px 18px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-weight:600">Cancel</button>' +
+      '<button id="gops-clean-preview" style="padding:10px 18px;border:0;border-radius:8px;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer">Preview</button>' +
+      '<button id="gops-clean-run" style="padding:10px 18px;border:0;border-radius:8px;background:#d33;color:#fff;font-weight:700;cursor:pointer">Clean</button>' +
+      '</div>' +
+      '<div id="gops-clean-result" style="margin-top:16px"></div>' +
+      '</div>';
+    document.body.appendChild(d);
+    d.querySelector('#gops-clean-date').value = new Date().toISOString().slice(0, 10);
+    d.querySelector('#gops-clean-cancel').onclick = function () { d.remove(); };
+
+    d.querySelector('#gops-clean-preview').onclick = function () {
+      var emp = d.querySelector('#gops-clean-emp').value.trim().toUpperCase();
+      var date = d.querySelector('#gops-clean-date').value;
+      if (!emp || !date) { toast('Fill both fields', '#c00'); return; }
+      var out = d.querySelector('#gops-clean-result'); out.innerHTML = 'Loading...';
+      apiCall('admin', 'getSelfieDebug', { employee_id: emp, date: date }).then(function (r) {
+        var inw = 0, outw = 0, done = 0, missed = 0;
+        (r.selfie_checks || []).forEach(function (sc) {
+          if (sc.status === 'DONE') done++;
+          else if (sc.status === 'MISSED') missed++;
+          else if (sc.in_window) inw++;
+          else outw++;
+        });
+        out.innerHTML = '<div style="background:#f5f5f5;padding:12px;border-radius:8px">' +
+          'In window (PENDING): <b>' + inw + '</b><br>' +
+          'Outside window (will be removed): <b style="color:#d33">' + outw + '</b><br>' +
+          'DONE (untouched): ' + done + '<br>' +
+          'MISSED (untouched): ' + missed + '</div>';
+      }).catch(function (e) { out.innerHTML = '<div style="color:#c00">' + esc(e.message || e.code) + '</div>'; });
     };
-    document.body.appendChild(btn);
-    if (cur === 'ar') applyLang('ar');
+
+    d.querySelector('#gops-clean-run').onclick = function () {
+      var emp = d.querySelector('#gops-clean-emp').value.trim().toUpperCase();
+      var date = d.querySelector('#gops-clean-date').value;
+      if (!emp || !date) { toast('Fill both fields', '#c00'); return; }
+      if (!confirm('Delete PENDING selfie checks outside the shift window for ' + emp + ' on ' + date + '?')) return;
+      var out = d.querySelector('#gops-clean-result'); out.innerHTML = 'Working...';
+      apiCall('admin', 'cleanSelfieChecks', { employee_id: emp, date: date }).then(function (r) {
+        toast('Removed ' + r.removed + ' check(s)', '#1e8e3e');
+        out.innerHTML = '<div style="background:#d4edda;padding:12px;border-radius:8px;color:#155724"><b>Done.</b> Removed ' + r.removed + ', kept ' + r.kept + '.</div>';
+      }).catch(function (e) { out.innerHTML = '<div style="color:#c00">' + esc(e.message || e.code) + '</div>'; });
+    };
   }
 
-  // ============ Admin FABs ============
-  function installAdminFABs() {
-    if (document.getElementById('gops-d3b-fabs')) return;
-    var wrap = document.createElement('div');
-    wrap.id = 'gops-d3b-fabs';
-    wrap.style.cssText = 'position:fixed;left:16px;bottom:80px;z-index:99990;display:flex;flex-direction:column;gap:8px;';
-    wrap.innerHTML =
-      '<button id="gops-wg-btn" style="padding:10px 14px;border:0;border-radius:20px;background:#5e35b1;color:#fff;font:600 13px system-ui,sans-serif;box-shadow:0 4px 16px rgba(94,53,177,.4);cursor:pointer;text-align:left">📅 Week Grid</button>' +
-      '<button id="gops-da-btn" style="padding:10px 14px;border:0;border-radius:20px;background:#c62828;color:#fff;font:600 13px system-ui,sans-serif;box-shadow:0 4px 16px rgba(198,40,40,.4);cursor:pointer;text-align:left">🗑️ Data admin</button>' +
-      '<button id="gops-cs-btn" style="padding:10px 14px;border:0;border-radius:20px;background:#ef6c00;color:#fff;font:600 13px system-ui,sans-serif;box-shadow:0 4px 16px rgba(239,108,0,.4);cursor:pointer;text-align:left">🧹 Clean selfies</button>';
-    document.body.appendChild(wrap);
-    wrap.querySelector('#gops-wg-btn').onclick = openWeekGrid;
-    wrap.querySelector('#gops-da-btn').onclick = openDataAdmin;
-    wrap.querySelector('#gops-cs-btn').onclick = openCleanSelfie;
-  }
-
-  // ============ Boot ============
-  loadConfigOnce().then(function () {
-    function install() {
-      installLangToggle();
-      if (isAdminPage()) installAdminFABs();
+  function injectCleanSelfiesButton() {
+    // Look for the "Selfie Checks" page and add a Clean button next to Refresh
+    var buttons = document.querySelectorAll('button');
+    var refreshBtn = null;
+    for (var i = 0; i < buttons.length; i++) {
+      var t = (buttons[i].textContent || '').trim().toLowerCase();
+      if (t === 'refresh' && buttons[i].id !== 'gops-clean-inserted') { refreshBtn = buttons[i]; break; }
     }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
-    else install();
+    if (!refreshBtn) return;
+    var parent = refreshBtn.parentNode;
+    if (!parent) return;
+    if (parent.querySelector('.gops-clean-btn')) return;
+    var btn = document.createElement('button');
+    btn.className = 'gops-clean-btn';
+    btn.textContent = '🧹 Clean';
+    btn.style.cssText = 'padding:8px 14px;border:0;border-radius:8px;background:#ef6c00;color:#fff;font-weight:700;cursor:pointer;margin-left:8px;';
+    btn.onclick = openCleanSelfiesDialog;
+    parent.appendChild(btn);
+  }
+
+  // ======================= OBSERVER =======================
+  function boot() {
+    var sidebar = findSidebar();
+    if (sidebar) {
+      injectSidebarWeekGrid(sidebar);
+      installLangButton(sidebar);
+    }
+    scanForDeletables();
+    injectCleanSelfiesButton();
+
+    // Re-run on any DOM mutation (SPA re-renders)
+    var pending = false;
+    var obs = new MutationObserver(function () {
+      if (pending) return;
+      pending = true;
+      setTimeout(function () {
+        pending = false;
+        var s = findSidebar();
+        if (s) { injectSidebarWeekGrid(s); installLangButton(s); }
+        scanForDeletables();
+        injectCleanSelfiesButton();
+      }, 300);
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+
+    // Also poll occasionally for safety
     setInterval(function () {
-      if (isAdminPage() && !document.getElementById('gops-d3b-fabs')) installAdminFABs();
-      if (!document.getElementById('gops-lang-btn')) installLangToggle();
-    }, 4000);
+      var s = findSidebar();
+      if (s) { injectSidebarWeekGrid(s); installLangButton(s); }
+      scanForDeletables();
+      injectCleanSelfiesButton();
+    }, 5000);
+
+    // Apply saved language on load
+    var l = getLang();
+    if (l === 'ar') setTimeout(function () { walkAndTranslate('ar'); }, 800);
+  }
+
+  loadConfigOnce().then(function () {
+    if (!isAdminPage()) return; // employee page uses nothing from this file
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
   });
 
 })();
