@@ -53,6 +53,7 @@ self.GOPS_PRECACHE = {
     "./src/services/delivery3b.js",
     "./src/services/delivery4.js",
     "./src/services/delivery5.js",
+    "./src/services/delivery6.js",
     "./src/services/warmup.js",
     "./src/services/location/browser-provider.js",
     "./src/services/location/index.js",
