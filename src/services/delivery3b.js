@@ -30,7 +30,7 @@
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'ping', payload: {}, client: 'warmup' }),
+                body: JSON.stringify({ action: 'warmupPing', payload: {}, client: 'warmup' }),
         redirect: 'follow',
         credentials: 'omit',
         keepalive: true
