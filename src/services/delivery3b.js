@@ -248,26 +248,49 @@
     last.appendChild(btn);
   }
 
-  function scanForDeletables() {
-    var path = window.location.hash || window.location.pathname;
-    // Heuristic: if we're on Employees page, inject delete buttons.
-    // We detect by finding a table whose rows have employee_id-like first column.
+    function scanForDeletables() {
+    // Determine the current page from the main heading (skip sidebar headings)
+    var hs = document.querySelectorAll('h1, h2, h3');
+    var title = '';
+    for (var i = 0; i < hs.length; i++) {
+      var h = hs[i];
+      if (h.closest('.sidebar, nav, aside, [id^="gops-"]')) continue;
+      var t = (h.textContent || '').trim();
+      if (t) { title = t.toLowerCase(); break; }
+    }
+    var isEmpPage = /^employees?\b/.test(title);
+    var isBrPage = /^branches?\b/.test(title);
+
+    // On any other page, remove every delete button we may have injected before
+    if (!isEmpPage && !isBrPage) {
+      document.querySelectorAll('.gops-del-btn').forEach(function (b) { b.remove(); });
+      document.querySelectorAll('tr[data-gops-scanned]').forEach(function (tr) { delete tr.dataset.gopsScanned; });
+      return;
+    }
+
     findTableRows(document).forEach(function (tr) {
       if (tr.dataset.gopsScanned) return;
       var cells = tr.querySelectorAll('td');
       if (cells.length < 2) return;
       var c0 = (cells[0].textContent || '').trim();
-      var c1 = (cells[1].textContent || '').trim();
-      // Employee row: first cell looks like an employee_id
-      if (/^[A-Z][A-Z0-9_]{2,30}$/.test(c0) && c1 && !/^\d+$/.test(c1)) {
+
+      if (isEmpPage) {
+        // Employee page: first cell must be all-caps ID like ABDELRHMAN_NABIL
+        if (/^[A-Z][A-Z0-9_]{2,30}$/.test(c0) && !/^\d+$/.test(c0)) {
+          tr.dataset.gopsScanned = '1';
+          injectRowDeleteButton(tr, 'employee', c0);
+        }
+      } else if (isBrPage && c0) {
+        // Branch page: prefer a cell that looks like BR-xxxx; otherwise the first cell
+        var id = c0;
+        if (!/^BR[-_]/i.test(c0)) {
+          for (var k = 0; k < cells.length; k++) {
+            var txt = (cells[k].textContent || '').trim();
+            if (/^BR[-_][A-Z0-9-]{2,40}$/i.test(txt)) { id = txt; break; }
+          }
+        }
         tr.dataset.gopsScanned = '1';
-        injectRowDeleteButton(tr, 'employee', c0);
-        return;
-      }
-      // Branch row: first cell often starts with BR- OR is a name and there's a lat/lng column
-      if (/^BR[-_]/.test(c0) || (/^[A-Z][A-Za-z0-9_ -]{2,40}$/.test(c0) && cells.length >= 5)) {
-        tr.dataset.gopsScanned = '1';
-        injectRowDeleteButton(tr, 'branch', c0);
+        injectRowDeleteButton(tr, 'branch', id);
       }
     });
   }
