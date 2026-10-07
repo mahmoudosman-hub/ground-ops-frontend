@@ -12,7 +12,6 @@
 
   var API_URL = null;
 
-  // ---- Config: read API_URL from config.js (fallback if not global) ----
   function loadConfigOnce() {
     if (API_URL) return Promise.resolve(API_URL);
     try {
@@ -30,7 +29,6 @@
       .catch(function () { return null; });
   }
 
-  // ---- Session (same format as src/core/session.js) ----
   function getSession(kind) {
     var key = 'gops.session.' + kind;
     var stores = [window.localStorage, window.sessionStorage].filter(Boolean);
@@ -45,7 +43,6 @@
     return null;
   }
 
-  // ---- API call (same wire format as src/core/api.js) ----
   function apiCall(kind, action, payload, opts) {
     opts = opts || {};
     if (!API_URL) return Promise.reject(makeErr('NOT_CONFIGURED', 'API_URL is not set'));
@@ -74,10 +71,8 @@
 
   function makeErr(code, msg) { var e = new Error(msg); e.code = code; return e; }
 
-  // ---- Page detection ----
   function isAdminPage() { return /admin\.html/i.test(window.location.pathname); }
 
-  // ---- Toast ----
   function toast(msg, opts) {
     opts = opts || {};
     var el = document.createElement('div');
@@ -131,7 +126,7 @@
   var SELFIE_POLL_MS = 60000;
   var selfieState = { busy: false, showing: false, lastCheckId: null, timer: null };
 
-    function startSelfiePolling() {
+  function startSelfiePolling() {
     if (selfieState.timer) return;
     setTimeout(pollSelfie, 4000);
     selfieState.timer = setInterval(pollSelfie, SELFIE_POLL_MS);
@@ -377,7 +372,6 @@
     load();
   }
 
-  // ---- Admin: floating button (always works, independent of sidebar structure) ----
   function installAdminEntryPoint() {
     if (document.getElementById('gops-sc-fab')) return;
     var fab = document.createElement('button');
@@ -387,7 +381,6 @@
     fab.onclick = openAdminSelfiePage;
     document.body.appendChild(fab);
 
-    // Also try to add a sidebar link (best-effort, some dashboards differ)
     try {
       var nav = document.querySelector('.sidebar, nav.sidebar, aside.sidebar, .nav, aside nav, .menu, #sidebar');
       if (nav && !nav.querySelector('[data-gops-sc-link]')) {
@@ -412,7 +405,6 @@
       } else {
         installAdminEntryPoint();
       }
-      // Some admin SPAs re-render; re-inject if removed
       setInterval(function () {
         if (!document.getElementById('gops-sc-fab')) installAdminEntryPoint();
       }, 3000);
