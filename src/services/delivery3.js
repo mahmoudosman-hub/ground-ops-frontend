@@ -131,10 +131,15 @@
   var SELFIE_POLL_MS = 60000;
   var selfieState = { busy: false, showing: false, lastCheckId: null, timer: null };
 
-  function startSelfiePolling() {
+    function startSelfiePolling() {
     if (selfieState.timer) return;
     setTimeout(pollSelfie, 4000);
     selfieState.timer = setInterval(pollSelfie, SELFIE_POLL_MS);
+    // When the app comes back to the foreground (e.g. tapped from a notification), check right away
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) setTimeout(pollSelfie, 500);
+    });
+    window.addEventListener('focus', function () { setTimeout(pollSelfie, 500); });
   }
 
   function pollSelfie() {
