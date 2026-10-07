@@ -1,8 +1,9 @@
 /**
- * Ground OPS - Delivery 3b v5
- * - Dashboard summary cards are now clickable (filter the table below).
- * - Fix: Clean button no longer appears on the main Dashboard.
- * - Fix: no infinite MutationObserver.
+ * Ground OPS - Delivery 3b v6
+ * - Dashboard cards: event delegation on document (catches clicks anywhere on the card).
+ * - Robust card detection (matches by short text containing a number + a known label).
+ * - Clean button: only inside Selfie Checks overlay.
+ * - Everything wrapped in try/catch.
  */
 (function () {
   'use strict';
@@ -43,7 +44,7 @@
     return fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, token: sess.token, payload: payload || {}, client: 'delivery3b/5.0' }),
+      body: JSON.stringify({ action: action, token: sess.token, payload: payload || {}, client: 'delivery3b/6.0' }),
       redirect: 'follow',
       credentials: 'omit'
     }).then(function (r) { return r.json(); }).then(function (body) {
@@ -74,19 +75,10 @@
     'Schedule Import': 'استيراد الجدول', 'Attendance': 'الحضور',
     'Location History': 'سجل الموقع', 'Geofence Events': 'أحداث النطاق',
     'Reports': 'التقارير', 'Settings': 'الإعدادات', 'Administrators': 'المشرفون',
-    'Selfie Checks': 'فحوصات السيلفي', 'Add shift': 'إضافة وردية',
-    'Add employee': 'إضافة موظف', 'Add branch': 'إضافة فرع',
-    'Refresh': 'تحديث', 'Save': 'حفظ', 'Save settings': 'حفظ الإعدادات',
-    'Cancel': 'إلغاء', 'Delete': 'حذف', 'Close': 'إغلاق', 'Change': 'تغيير',
+    'Selfie Checks': 'فحوصات السيلفي',
+    'Refresh': 'تحديث', 'Cancel': 'إلغاء', 'Close': 'إغلاق',
     'Active': 'نشط', 'Inactive': 'غير نشط', 'Status': 'الحالة',
-    'Employee': 'الموظف', 'Date': 'التاريخ', 'Branch': 'الفرع', 'Shift': 'الوردية',
-    'Sign in': 'تسجيل الدخول', 'Sign out': 'تسجيل الخروج',
-    'Password': 'كلمة المرور', 'Username': 'اسم المستخدم',
-    'Employee ID': 'رقم الموظف', 'Remember me': 'تذكرني',
-    'Total Employees': 'إجمالي الموظفين', 'Present': 'حاضر',
-    'Late': 'متأخر', 'Absent': 'غائب', 'On Leave': 'في إجازة',
-    'Outside Geofence': 'خارج النطاق', 'Tracking Unavailable': 'التتبع متوقف',
-    'On Break': 'في بريك', 'Week Grid': 'الجدول الأسبوعي', 'Language': 'اللغة', 'Actions': 'الإجراءات'
+    'Week Grid': 'الجدول الأسبوعي', 'Language': 'اللغة', 'Actions': 'الإجراءات'
   };
   var LANG_KEY = 'gops.lang';
   function getLang() { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { return 'en'; } }
@@ -118,10 +110,7 @@
     btn.setAttribute('role', 'button');
     btn.style.cssText = 'cursor:pointer;padding:12px 16px;font-weight:700;border-top:1px solid rgba(0,0,0,.08);color:inherit;';
     function render() { btn.textContent = getLang() === 'ar' ? '🌐 English' : '🌐 العربية'; }
-    btn.onclick = function () {
-      var next = getLang() === 'ar' ? 'en' : 'ar';
-      setLang(next); walkAndTranslate(next); render();
-    };
+    btn.onclick = function () { var next = getLang() === 'ar' ? 'en' : 'ar'; setLang(next); walkAndTranslate(next); render(); };
     render();
     sidebar.appendChild(btn);
   }
@@ -200,7 +189,7 @@
 
   // ======================= DELETE BUTTONS =======================
   function overlayOpen() {
-    try { return !!document.querySelector('#gops-week-page, #gops-clean-dialog, #gops-sc-admin-root'); } catch (e) { return false; }
+    try { return !!document.querySelector('#gops-week-page, #gops-clean-dialog'); } catch (e) { return false; }
   }
   function currentPageTitle() {
     try {
@@ -287,7 +276,7 @@
     } catch (e) {}
   }
 
-  // ======================= CLEAN SELFIES (only inside Selfie Checks overlay) =======================
+  // ======================= CLEAN SELFIES =======================
   function openCleanSelfiesDialog() {
     try {
       var old = document.getElementById('gops-clean-dialog'); if (old) old.remove();
@@ -340,15 +329,12 @@
     } catch (e) { toast('Could not open clean dialog: ' + e.message, '#c00'); }
   }
 
-  // FIX: only inject inside the Selfie Checks overlay, not the main dashboard
   function injectCleanSelfiesButton() {
     try {
-      if (overlayOpen()) return;
       var scRoot = document.getElementById('gops-sc-admin-root');
-      if (!scRoot) return; // not on Selfie Checks page
+      if (!scRoot) return;
       var refreshBtn = scRoot.querySelector('#gops-sc-refresh');
       if (!refreshBtn) {
-        // Fallback: find any Refresh button inside the overlay
         var allBtns = scRoot.querySelectorAll('button');
         for (var i = 0; i < allBtns.length; i++) {
           if ((allBtns[i].textContent || '').trim().toLowerCase() === 'refresh') { refreshBtn = allBtns[i]; break; }
@@ -366,7 +352,7 @@
     } catch (e) {}
   }
 
-  // ======================= DASHBOARD CARDS =======================
+  // ======================= DASHBOARD CARDS (v6 - event delegation) =======================
   var CARD_LABELS = {
     'Total Employees': 'ALL',
     'Present': 'PRESENT',
@@ -384,7 +370,7 @@
       var opts = selects[i].options;
       for (var j = 0; j < opts.length; j++) {
         var v = opts[j].value;
-        if (v === 'LATE' || v === 'ABSENT' || v === 'ON_TIME' || v === 'CHECKED_IN') return selects[i];
+        if (v === 'LATE' || v === 'ABSENT' || v === 'ON_TIME' || v === 'CHECKED_IN' || v === 'TRACKING_UNAVAILABLE') return selects[i];
       }
     }
     return null;
@@ -394,7 +380,12 @@
     var buttons = document.querySelectorAll('button');
     for (var i = 0; i < buttons.length; i++) {
       var t = (buttons[i].textContent || '').trim().toLowerCase();
-      if (t === 'apply') { buttons[i].click(); return true; }
+      if (t === 'apply') {
+        try {
+          buttons[i].dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        } catch (e) { buttons[i].click(); }
+        return true;
+      }
     }
     return false;
   }
@@ -411,58 +402,80 @@
 
   function applyDashboardFilter(filter) {
     var sel = findStatusSelect();
-    if (!sel) { toast('Could not find the status filter', '#c00'); return; }
-    if (filter === 'ALL') {
-      sel.value = '';
-    } else {
-      var labels = { 'PRESENT': 'Present', 'ON_BREAK': 'On break', 'LATE': 'Late', 'ABSENT': 'Absent', 'ON_LEAVE': 'On leave', 'OUTSIDE': 'Outside geofence', 'TRACKING_UNAVAILABLE': 'Tracking unavailable' };
+    if (!sel) { toast('Status filter not found on this page', '#c00'); return; }
+    if (filter === 'ALL') { sel.value = ''; }
+    else {
+      var labels = {
+        'PRESENT': 'Present', 'ON_BREAK': 'On break', 'LATE': 'Late', 'ABSENT': 'Absent',
+        'ON_LEAVE': 'On leave', 'OUTSIDE': 'Outside geofence', 'TRACKING_UNAVAILABLE': 'Tracking unavailable'
+      };
       ensureOption(sel, filter, labels[filter] || filter);
       sel.value = filter;
     }
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-    clickApplyButton();
-    // Scroll to the table so the user sees the result
+    try { sel.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+    var ok = clickApplyButton();
+    if (!ok) toast('Apply button not found', '#c00');
     setTimeout(function () {
       var tables = document.querySelectorAll('table');
-      if (tables.length) tables[tables.length - 1].scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
+      if (tables.length) {
+        try { tables[tables.length - 1].scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+      }
+    }, 350);
   }
 
-  function makeDashboardCardsClickable() {
+  function markCardsClickable() {
     try {
-      // Only run on Dashboard page
-      if (currentPageTitle() !== 'dashboard') return;
-      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-      var node, found = [];
-      while ((node = walker.nextNode())) {
-        var txt = (node.nodeValue || '').trim();
-        if (!txt || !CARD_LABELS.hasOwnProperty(txt)) continue;
-        if (node.parentNode && node.parentNode.closest && node.parentNode.closest('[id^="gops-"]')) continue;
-        found.push(node);
-      }
-      found.forEach(function (textNode) {
-        var el = textNode.parentNode;
-        // Walk up looking for a card-like parent (has number + label, short text)
-        for (var depth = 0; depth < 4 && el && el !== document.body; depth++) {
-          var parentText = (el.textContent || '').trim();
-          if (/\b\d+\b/.test(parentText) && parentText.length < 80) {
-            if (el.dataset.gopsCardClickable) return;
-            el.dataset.gopsCardClickable = '1';
-            el.style.cursor = 'pointer';
-            el.style.transition = 'transform .15s, box-shadow .15s, background .15s';
-            el.style.userSelect = 'none';
-            el.title = 'Click to filter the table below';
-            el.onmouseenter = function () { el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 6px 16px rgba(0,0,0,.15)'; };
-            el.onmouseleave = function () { el.style.transform = ''; el.style.boxShadow = ''; };
-            (function (filter) {
-              el.onclick = function () { applyDashboardFilter(filter); };
-            })(CARD_LABELS[txt]);
-            return;
-          }
-          el = el.parentNode;
+      // Use a light attribute on the CARD elements only (found by their label text inside a small element)
+      var labels = Object.keys(CARD_LABELS);
+      var all = document.querySelectorAll('body *');
+      for (var i = 0; i < all.length; i++) {
+        var el = all[i];
+        if (el.dataset.gopsCardLabel) continue;
+        if (el.id && el.id.indexOf('gops-') === 0) continue;
+        // Only small leaf-ish elements: no more than ~4 children
+        if (el.children && el.children.length > 4) continue;
+        var txt = (el.textContent || '').trim();
+        if (!txt || txt.length > 45) continue;
+        if (!/\d/.test(txt)) continue;
+        for (var j = 0; j < labels.length; j++) {
+          var lbl = labels[j];
+          if (txt.indexOf(lbl) < 0) continue;
+          // Ensure the label appears only once (avoid picking a big container that lists everything)
+          var first = txt.indexOf(lbl);
+          var second = txt.indexOf(lbl, first + 1);
+          if (second >= 0) continue;
+          el.dataset.gopsCardLabel = lbl;
+          el.style.cursor = 'pointer';
+          el.style.transition = 'transform .15s, box-shadow .15s, background .15s';
+          el.title = 'Click to filter the table below';
+          el.addEventListener('mouseenter', function () { this.style.boxShadow = '0 6px 20px rgba(0,0,0,.18)'; this.style.transform = 'translateY(-2px)'; });
+          el.addEventListener('mouseleave', function () { this.style.boxShadow = ''; this.style.transform = ''; });
+          break;
         }
-      });
+      }
     } catch (e) {}
+  }
+
+  // Global click listener (capture phase) - fires no matter where inside the card you click
+  function installCardClickDelegation() {
+    if (window.__gopsCardClickBound) return;
+    window.__gopsCardClickBound = true;
+    document.addEventListener('click', function (ev) {
+      var el = ev.target;
+      while (el && el !== document.body) {
+        if (el.dataset && el.dataset.gopsCardLabel) {
+          var filter = CARD_LABELS[el.dataset.gopsCardLabel];
+          // Visual feedback
+          var origBg = el.style.background;
+          el.style.background = '#d1e7ff';
+          setTimeout(function () { el.style.background = origBg; }, 400);
+          try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {}
+          applyDashboardFilter(filter);
+          return;
+        }
+        el = el.parentNode;
+      }
+    }, true);
   }
 
   // ======================= BOOT =======================
@@ -470,14 +483,15 @@
     try {
       var sidebar = findSidebar();
       if (sidebar) { injectSidebarWeekGrid(sidebar); installLangButton(sidebar); }
-      scanForDeletables();
-      injectCleanSelfiesButton();
-      makeDashboardCardsClickable();
     } catch (e) {}
+    try { scanForDeletables(); } catch (e) {}
+    try { injectCleanSelfiesButton(); } catch (e) {}
+    try { markCardsClickable(); } catch (e) {}
   }
   function boot() {
+    installCardClickDelegation();
     tick();
-    setInterval(tick, 3000);
+    setInterval(tick, 2500);
     var l = getLang();
     if (l === 'ar') setTimeout(function () { walkAndTranslate('ar'); }, 1000);
   }
