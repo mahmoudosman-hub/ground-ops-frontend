@@ -1,14 +1,9 @@
 /**
  * Ground OPS - Admin translations dictionary.
- * UI strings (used when switching to Arabic) + Arabic hints for settings (always shown).
+ * UI strings (used when switching to Arabic) + Arabic hints for settings.
  */
 window.GOPS_ADMIN_I18N = {
-
-  // =====================================================
-  // UI STRINGS (used when UI language = Arabic)
-  // =====================================================
   ui: {
-    // ---------- Navigation ----------
     "Dashboard": "لوحة القيادة",
     "Live Monitoring": "المراقبة المباشرة",
     "Requests": "الطلبات",
@@ -21,15 +16,16 @@ window.GOPS_ADMIN_I18N = {
     "Attendance": "الحضور",
     "Location History": "سجل المواقع",
     "Geofence Events": "أحداث النطاق",
+    "Leaves": "الإجازات",
     "Reports": "التقارير",
+    "Audit Logs": "سجلات التدقيق",
     "Settings": "الإعدادات",
     "Administrators": "المشرفون",
     "Selfie Checks": "فحوصات السيلفي",
     "Auto Scheduler": "المجدول التلقائي",
+    "Week Grid": "الجدول الأسبوعي",
     "Sign out": "تسجيل الخروج",
     "Logout": "خروج",
-
-    // ---------- Common buttons ----------
     "Save": "حفظ",
     "Save settings": "حفظ الإعدادات",
     "Save changes": "حفظ التعديلات",
@@ -77,8 +73,6 @@ window.GOPS_ADMIN_I18N = {
     "Reactivate": "إعادة تنشيط",
     "Deactivate": "إلغاء التنشيط",
     "Acknowledge": "إقرار",
-
-    // ---------- Table headers ----------
     "Date": "التاريخ",
     "Employee": "الكابتن",
     "Employee ID": "رقم الكابتن",
@@ -100,7 +94,6 @@ window.GOPS_ADMIN_I18N = {
     "Notes": "ملاحظات",
     "Note": "ملاحظة",
     "Total": "الإجمالي",
-    "Page": "الصفحة",
     "From": "من",
     "To": "إلى",
     "Time": "الوقت",
@@ -134,7 +127,6 @@ window.GOPS_ADMIN_I18N = {
     "No": "لا",
     "Active": "نشط",
     "Inactive": "غير نشط",
-    "Disabled": "معطّل",
     "Enabled": "مفعّل",
     "On": "مفعّل",
     "Off": "معطّل",
@@ -148,8 +140,6 @@ window.GOPS_ADMIN_I18N = {
     "Created at": "أُنشئ في",
     "Updated at": "آخر تحديث",
     "Published at": "نُشر في",
-
-    // ---------- Status values ----------
     "Not checked in": "لم يسجل الحضور",
     "On duty": "في الخدمة",
     "Checked in": "سجل الحضور",
@@ -178,20 +168,12 @@ window.GOPS_ADMIN_I18N = {
     "Waiting for admin": "بانتظار المشرف",
     "Waiting for the other captain": "بانتظار الكابتن الآخر",
     "Waiting for your answer": "بانتظار ردّك",
-    "On time.": "في الوقت",
-    "Late.": "متأخر",
-
-    // ---------- Dashboard cards ----------
     "Total Employees": "إجمالي الكباتن",
     "Present": "حاضر",
-    "Absent": "غائب",
     "On Leave": "في إجازة",
     "Outside Geofence": "خارج النطاق",
     "Tracking Unavailable": "التتبع متوقف",
     "On Break": "في بريك",
-    "Late": "متأخر",
-
-    // ---------- Leave types ----------
     "Annual leave": "إجازة سنوية",
     "Casual leave": "إجازة عارضة",
     "Sick leave": "إجازة مرضية",
@@ -200,21 +182,15 @@ window.GOPS_ADMIN_I18N = {
     "Casual": "عارضة",
     "Sick": "مرضية",
     "Other": "أخرى",
-
-    // ---------- Request types ----------
     "Shift swap": "تبديل وردية",
     "Days-off swap": "تبديل يوم راحة",
     "Early leave": "انصراف مبكر",
     "Late permission": "إذن تأخير",
-
-    // ---------- Settings labels (common) ----------
     "Language": "اللغة",
     "Language & Hints": "اللغة والتلميحات",
     "UI Language": "لغة الواجهة",
     "Hints Language": "لغة التلميحات",
     "Hints Enabled": "تفعيل التلميحات",
-
-    // ---------- Common phrases ----------
     "Loading...": "جارٍ التحميل...",
     "No data": "لا توجد بيانات",
     "No results": "لا توجد نتائج",
@@ -224,17 +200,12 @@ window.GOPS_ADMIN_I18N = {
     "Required": "مطلوب",
     "Total records": "إجمالي السجلات",
     "records": "سجل",
-    "of": "من",
     "Page:": "الصفحة:",
     "Search (ID or name)": "بحث (المعرّف أو الاسم)",
     "No records to display": "لا توجد سجلات للعرض",
     "Loading data...": "جارٍ تحميل البيانات...",
     "Something went wrong": "حدث خطأ ما",
     "Try again": "حاول مرة أخرى",
-    "Press Refresh for the latest data now.": "اضغط تحديث للحصول على أحدث البيانات الآن.",
-    "Updates automatically every 10 minutes.": "يتم التحديث تلقائيًا كل 10 دقائق.",
-
-    // ---------- Auto Scheduler ----------
     "Coverage": "التغطية",
     "Constraints": "القيود",
     "Generate": "توليد",
@@ -254,15 +225,9 @@ window.GOPS_ADMIN_I18N = {
     "Captains scheduled": "الكباتن المجدولون",
     "Weekly grid": "الجدول الأسبوعي",
     "Captain stats": "إحصائيات الكباتن",
-    "Shifts": "الورديات",
     "Hours": "الساعات",
     "Min OK": "الحد الأدنى",
-    "No coverage rules yet. Add the first one above.": "لا توجد قواعد تغطية. أضف الأولى أعلاه.",
-    "No constraints yet.": "لا توجد قيود حتى الآن.",
-    "No drafts yet. Generate one from the Generate tab.": "لا توجد مسودات. ولّد واحدة من تبويب التوليد.",
     "Publish this draft? This will create real assignments in the system.": "نشر هذه المسودة؟ سيؤدي هذا إلى إنشاء إسنادات فعلية في النظام.",
-
-    // ---------- Weekdays ----------
     "Sunday": "الأحد",
     "Monday": "الاثنين",
     "Tuesday": "الثلاثاء",
@@ -270,8 +235,6 @@ window.GOPS_ADMIN_I18N = {
     "Thursday": "الخميس",
     "Friday": "الجمعة",
     "Saturday": "السبت",
-
-    // ---------- Months ----------
     "January": "يناير",
     "February": "فبراير",
     "March": "مارس",
@@ -285,121 +248,96 @@ window.GOPS_ADMIN_I18N = {
     "November": "نوفمبر",
     "December": "ديسمبر"
   },
-
-  // =====================================================
-  // SETTINGS HINTS (always shown in Arabic, on hover)
-  // =====================================================
   hints: {
-    // ---------- Geofence & GPS ----------
-    "default_geofence_radius_meters": "نطاق الفرع الافتراضي بالمتر. الكابتن يُعتبر داخل الفرع إذا كان في هذا النطاق.",
-    "gps_accuracy_threshold_meters": "أقصى دقة مسموحة لموقع GPS بالمتر. أي موقع أقل دقة من هذا يُعتبر غير موثوق.",
-    "location_interval_minutes": "الفترة بين قراءات الموقع أثناء الشيفت بالدقائق.",
-    "location_sync_minutes": "كل كم دقيقة يرفع تطبيق الأندرويد المواقع المخزنة إلى السيرفر.",
-    "minimum_distance_meters": "أقل مسافة (بالمتر) يجب أن يتحركها الكابتن لتُسجَّل نقطة موقع جديدة.",
-    "tracking_enabled": "تشغيل أو إيقاف تتبع الموقع لكل الكباتن.",
-    "tracking_timeout_minutes": "إذا لم يصل موقع من الكابتن خلال هذه المدة، يُعتبر التتبع متوقفًا.",
-    "max_gps_age_seconds": "أقصى عمر لقراءة GPS مسموح به عند تسجيل الحضور أو الانصراف (بالثواني).",
-
-    // ---------- Attendance ----------
-    "default_grace_minutes": "دقائق السماح الافتراضية عند إنشاء وردية جديدة.",
-    "selfie_required": "إذا كان مفعّلًا، يجب على الكابتن التقاط سيلفي عند تسجيل الحضور.",
-    "checkout_selfie_required": "إذا كان مفعّلًا، يجب على الكابتن التقاط سيلفي عند تسجيل الانصراف.",
-    "selfie_max_bytes": "الحجم الأقصى المسموح به لصورة السيلفي (بالبايت).",
-    "checkin_early_minutes": "كم دقيقة قبل بداية الشيفت يمكن للكابتن تسجيل الحضور.",
-    "checkout_grace_minutes": "كم دقيقة بعد نهاية الشيفت يمكن تسجيل الانصراف والمتابعة.",
-    "absent_after_minutes": "إذا مرّت هذه المدة من بداية الشيفت بدون حضور، يُسجَّل الكابتن غائبًا.",
-    "checkout_requires_geofence": "إذا كان مفعّلًا، لا يمكن تسجيل الانصراف إلا داخل نطاق الفرع.",
-    "checkout_required": "إذا كان مفعّلًا، يُسجَّل تنبيه MISSING_CHECKOUT لمن لم يسجل الانصراف.",
-    "reject_mock_location": "إذا كان مفعّلًا، يُرفض تسجيل الحضور إذا استُخدم موقع مزيّف.",
-
-    // ---------- Sessions & Security ----------
+    "default_geofence_radius_meters": "نطاق الفرع الافتراضي بالمتر.",
+    "gps_accuracy_threshold_meters": "أقصى دقة مسموحة لموقع GPS بالمتر.",
+    "location_interval_minutes": "الفترة بين قراءات الموقع أثناء الشيفت.",
+    "location_sync_minutes": "كل كم دقيقة يرفع التطبيق المواقع إلى السيرفر.",
+    "minimum_distance_meters": "أقل مسافة يجب أن يتحركها الكابتن لتُسجَّل نقطة جديدة.",
+    "tracking_enabled": "تشغيل أو إيقاف تتبع الموقع.",
+    "tracking_timeout_minutes": "إذا لم يصل موقع خلال هذه المدة، يُعتبر التتبع متوقفًا.",
+    "max_gps_age_seconds": "أقصى عمر لقراءة GPS مسموح به عند الحضور.",
+    "default_grace_minutes": "دقائق السماح الافتراضية عند إنشاء وردية.",
+    "selfie_required": "طلب سيلفي عند تسجيل الحضور.",
+    "checkout_selfie_required": "طلب سيلفي عند تسجيل الانصراف.",
+    "selfie_max_bytes": "الحجم الأقصى لصورة السيلفي.",
+    "checkin_early_minutes": "كم دقيقة قبل الشيفت يمكن تسجيل الحضور.",
+    "checkout_grace_minutes": "كم دقيقة بعد الشيفت يمكن تسجيل الانصراف.",
+    "absent_after_minutes": "بعد هذه المدة بدون حضور، يُسجَّل الكابتن غائبًا.",
+    "checkout_requires_geofence": "لا يُسمح بالانصراف إلا داخل نطاق الفرع.",
+    "checkout_required": "تنبيه لمن لم يسجل الانصراف.",
+    "reject_mock_location": "رفض الحضور إذا استُخدم موقع مزيّف.",
     "session_hours": "مدة صلاحية جلسة الكابتن بالساعات.",
-    "session_remember_days": "مدة الجلسة (بالأيام) عند اختيار \"تذكرني\".",
-    "max_failed_logins": "عدد محاولات الدخول الفاشلة قبل قفل الحساب مؤقتًا.",
-    "lockout_minutes": "مدة قفل الحساب بعد تجاوز المحاولات الفاشلة (بالدقائق).",
+    "session_remember_days": "مدة الجلسة عند اختيار تذكرني.",
+    "max_failed_logins": "عدد محاولات الدخول الفاشلة قبل القفل.",
+    "lockout_minutes": "مدة قفل الحساب بالدقائق.",
     "password_min_length": "الحد الأدنى لعدد أحرف كلمة المرور.",
-
-    // ---------- Schedule import ----------
-    "schedule_import_enabled": "تشغيل الفحص اليومي التلقائي لجدول الكباتن من Google Sheet.",
-    "schedule_spreadsheet_id": "رابط أو معرّف ملف Google Sheet الذي يحتوي على الجدول الأسبوعي.",
-    "schedule_sheet_name": "اسم التبويب داخل ملف الجدول (مثال: جدول الكباتن).",
-    "schedule_days_ahead": "كم يوم للأمام يقرأ المجدول من الجدول الأسبوعي.",
-    "schedule_max_auto_changes": "إذا كان التغيير التلقائي سيلغي أو يعدّل أكثر من هذا العدد، يتوقف وينتظر موافقتك اليدوية.",
-    "schedule_name_aliases": "أسماء بديلة للكباتن (صيغة: اسم الجدول = اسم النظام، مفصولة بـ ;).",
-    "schedule_branch_aliases": "أسماء بديلة للفروع (صيغة: اسم الجدول = اسم النظام، مفصولة بـ ;).",
-
-    // ---------- Breaks ----------
-    "break_allowance_minutes": "إجمالي دقائق البريك المسموح بها لكل كابتن في الشيفت.",
-    "alert_on_break_exceeded": "تنبيه عند تجاوز الكابتن لمدة البريك المسموح بها.",
-
-    // ---------- Alerts ----------
+    "schedule_import_enabled": "تشغيل الفحص اليومي التلقائي للجدول من Google Sheet.",
+    "schedule_spreadsheet_id": "رابط ملف Google Sheet الخاص بالجدول الأسبوعي.",
+    "schedule_sheet_name": "اسم التبويب داخل ملف الجدول.",
+    "schedule_days_ahead": "كم يوم للأمام يقرأ المجدول.",
+    "schedule_max_auto_changes": "الحد الأقصى للتغييرات التلقائية قبل انتظار الموافقة.",
+    "schedule_name_aliases": "أسماء بديلة للكباتن في الجدول.",
+    "schedule_branch_aliases": "أسماء بديلة للفروع في الجدول.",
+    "break_allowance_minutes": "إجمالي دقائق البريك المسموح بها.",
+    "alert_on_break_exceeded": "تنبيه عند تجاوز مدة البريك.",
     "alerts_enabled": "المفتاح الرئيسي لتنبيهات المشرفين.",
     "alert_on_late": "تنبيه عند وصول كابتن متأخر.",
     "alert_on_absent": "تنبيه عند غياب كابتن.",
-    "alert_on_exit": "تنبيه عند خروج كابتن من نطاق الفرع.",
-    "alert_on_return": "تنبيه عند عودة كابتن إلى نطاق الفرع.",
-    "alert_on_tracking_unavailable": "تنبيه عند توقف بيانات التتبع أثناء الشيفت.",
-    "alert_on_spoofing": "تنبيه عند اكتشاف موقع مزيّف محتمل.",
-    "alert_cooldown_minutes": "أقل مدة بين تنبيهين من نفس النوع لنفس الكابتن.",
-    "alert_email_enabled": "إرسال ملخص التنبيهات بالبريد الإلكتروني.",
-    "alert_email_recipients": "عناوين البريد الإلكتروني (مفصولة بفواصل، حتى 5 عناوين).",
+    "alert_on_exit": "تنبيه عند خروج كابتن من الفرع.",
+    "alert_on_return": "تنبيه عند عودة كابتن إلى الفرع.",
+    "alert_on_tracking_unavailable": "تنبيه عند توقف بيانات التتبع.",
+    "alert_on_spoofing": "تنبيه عند اكتشاف موقع مزيّف.",
+    "alert_cooldown_minutes": "أقل مدة بين تنبيهين متتاليين.",
+    "alert_email_enabled": "إرسال ملخص التنبيهات بالبريد.",
+    "alert_email_recipients": "عناوين البريد (حتى 5 عناوين).",
     "alert_email_max_per_digest": "أقصى عدد تنبيهات في رسالة بريد واحدة.",
-
-    // ---------- Archive & Retention ----------
-    "archive_location_after_days": "نقل المواقع الأقدم من هذا العدد من الأيام إلى أرشيف شهري (0 = أبدًا).",
-    "retention_location_days": "حذف بيانات المواقع الأقدم من هذا العدد من الأيام (0 = الاحتفاظ للأبد).",
-    "retention_system_logs_days": "حذف سجلات النظام الأقدم من هذا العدد من الأيام (0 = الاحتفاظ للأبد).",
-
-    // ---------- Leave & Requests ----------
-    "annual_leave_days_per_year": "رصيد الإجازة السنوية لكل كابتن (يُجدَّد في 1 يناير).",
-    "leave_max_days_per_week": "أقصى عدد أيام إجازة مسموح بها في الأسبوع الواحد.",
-    "request_min_hours_ahead": "أقل مدة قبل الشيفت يمكن تقديم طلب تبديل أو إجازة فيها (بالساعات).",
-    "request_partner_expiry_hours": "مدة صلاحية طلب التبديل إذا لم يرد الكابتن الآخر (بالساعات).",
-    "early_leave_min_minutes_ahead": "أقل مدة قبل المغادرة يمكن تقديم طلب الانصراف المبكر فيها (بالدقائق).",
-    "sick_max_days_back": "أقصى عدد أيام للخلف يمكن أن تبدأ فيها الإجازة المرضية.",
-    "request_max_days": "أقصى طول لطلب إجازة واحد (بالأيام).",
-    "request_files_max": "أقصى عدد ملفات إثبات لكل طلب إجازة مرضية.",
-    "request_file_max_bytes": "أقصى حجم للملف الواحد (بالبايت).",
-
-    // ---------- Selfie Checks ----------
-    "require_native_app": "رفض الحضور من المتصفح، والسماح فقط من تطبيق الأندرويد.",
-    "native_app_exempt_ids": "أرقام الكباتن المسموح لهم بالحضور من المتصفح (مفصولة بفواصل).",
-    "selfie_checks_enabled": "طلب صور سيلفي عشوائية من الكباتن أثناء الشيفت.",
-    "selfie_checks_min_per_shift": "أقل عدد فحوصات سيلفي في الشيفت الواحد.",
-    "selfie_checks_max_per_shift": "أقصى عدد فحوصات سيلفي في الشيفت الواحد.",
-    "selfie_check_deadline_minutes": "المدة المتاحة للكابتن للرد على طلب السيلفي.",
+    "archive_location_after_days": "نقل المواقع الأقدم من هذا العدد إلى أرشيف.",
+    "retention_location_days": "حذف بيانات المواقع الأقدم من هذا العدد (0 = للأبد).",
+    "retention_system_logs_days": "حذف سجلات النظام الأقدم من هذا العدد (0 = للأبد).",
+    "annual_leave_days_per_year": "رصيد الإجازة السنوية لكل كابتن.",
+    "leave_max_days_per_week": "أقصى عدد أيام إجازة في الأسبوع.",
+    "request_min_hours_ahead": "أقل مدة قبل الشيفت لتقديم طلب تبديل أو إجازة.",
+    "request_partner_expiry_hours": "مدة صلاحية طلب التبديل إذا لم يرد الكابتن الآخر.",
+    "early_leave_min_minutes_ahead": "أقل مدة قبل المغادرة لطلب الانصراف المبكر.",
+    "sick_max_days_back": "أقصى عدد أيام للخلف للإجازة المرضية.",
+    "request_max_days": "أقصى طول لطلب إجازة واحد.",
+    "request_files_max": "أقصى عدد ملفات إثبات للطلب.",
+    "request_file_max_bytes": "أقصى حجم للملف الواحد.",
+    "require_native_app": "رفض الحضور من المتصفح، والسماح فقط من التطبيق.",
+    "native_app_exempt_ids": "أرقام الكباتن المسموح لهم بالحضور من المتصفح.",
+    "selfie_checks_enabled": "طلب صور سيلفي عشوائية أثناء الشيفت.",
+    "selfie_checks_min_per_shift": "أقل عدد فحوصات سيلفي في الشيفت.",
+    "selfie_checks_max_per_shift": "أقصى عدد فحوصات سيلفي في الشيفت.",
+    "selfie_check_deadline_minutes": "المدة المتاحة للرد على طلب السيلفي.",
     "selfie_check_first_delay_minutes": "لا يُطلب سيلفي خلال هذه المدة من بداية الحضور.",
     "selfie_check_last_delay_minutes": "لا يُطلب سيلفي خلال هذه المدة من نهاية الشيفت.",
     "selfie_check_min_gap_minutes": "أقل فاصل زمني بين فحصي سيلفي.",
-    "spoofing_network_gps_diff_meters": "إذا اختلف موقع GPS عن موقع الشبكة بأكثر من هذه المسافة، يُسجَّل تنبيه.",
-    "spoofing_speed_kmh": "أقصى سرعة معقولة بين نقطتي موقع (كم/ساعة).",
-
-    // ---------- App version ----------
-    "app_latest_version": "رقم أحدث نسخة من التطبيق (مثال: 1.0.5). يُنبه الكابتن إذا كان عنده نسخة أقدم.",
-    "app_latest_url": "رابط تحميل أحدث نسخة من التطبيق.",
-    "app_latest_notes": "ملاحظات قصيرة عن التحديث تُعرض للكابتن.",
-
-    // ---------- Auto Scheduler ----------
-    "sched_enabled": "تشغيل المجدول التلقائي لإنشاء الجداول الأسبوعية.",
-    "sched_min_rest_hours": "أقل عدد ساعات راحة بين شيفتين متتاليين لنفس الكابتن.",
-    "sched_max_hours_per_week": "أقصى عدد ساعات عمل أسبوعيًا لكل كابتن.",
-    "sched_max_shifts_per_week": "أقصى عدد شيفتات أسبوعيًا لكل كابتن.",
-    "sched_min_shifts_per_week": "أقل عدد شيفتات أسبوعيًا لكل كابتن.",
-    "sched_max_consecutive_days": "أقصى عدد أيام عمل متتالية بدون راحة.",
-    "sched_off_days_per_week": "عدد أيام الراحة الأسبوعية لكل كابتن.",
-    "sched_off_day_1": "اليوم الأول للراحة الأسبوعية.",
-    "sched_off_day_2": "اليوم الثاني للراحة الأسبوعية.",
-    "sched_off_days_flexible": "إذا كان مفعّلًا، يمكن للمجدول تغيير أيام الراحة حسب الحاجة.",
-    "sched_max_daily_leaves": "أقصى عدد إجازات معتمدة يوميًا على مستوى كل الفروع.",
+    "spoofing_network_gps_diff_meters": "فرق GPS والشبكة الذي يُسجَّل عنده تنبيه.",
+    "spoofing_speed_kmh": "أقصى سرعة معقولة بين نقطتي موقع.",
+    "app_latest_version": "رقم أحدث نسخة من التطبيق.",
+    "app_latest_url": "رابط تحميل أحدث نسخة.",
+    "app_latest_notes": "ملاحظات التحديث.",
+    "sched_enabled": "تشغيل المجدول التلقائي.",
+    "sched_min_rest_hours": "أقل عدد ساعات راحة بين شيفتين.",
+    "sched_max_hours_per_week": "أقصى عدد ساعات عمل أسبوعيًا.",
+    "sched_max_shifts_per_week": "أقصى عدد شيفتات أسبوعيًا.",
+    "sched_min_shifts_per_week": "أقل عدد شيفتات أسبوعيًا.",
+    "sched_max_consecutive_days": "أقصى عدد أيام عمل متتالية.",
+    "sched_off_days_per_week": "عدد أيام الراحة الأسبوعية.",
+    "sched_off_day_1": "اليوم الأول للراحة.",
+    "sched_off_day_2": "اليوم الثاني للراحة.",
+    "sched_off_days_flexible": "السماح بتغيير أيام الراحة حسب الحاجة.",
+    "sched_max_daily_leaves": "أقصى عدد إجازات معتمدة يوميًا.",
     "sched_max_daily_off": "أقصى عدد كباتن في راحة يوميًا.",
-    "sched_min_available_buffer": "عدد كباتن إضافيين يُحتفظ بهم متاحين فوق احتياج الفروع.",
-    "sched_leave_overflow_action": "السلوك عند تجاوز حد الإجازات اليومية: warn = تحذير، reject = رفض، allow = سماح.",
-    "sched_week_starts_on": "أول يوم في الأسبوع (Sunday..Saturday).",
-    "sched_days_ahead": "عدد الأيام التي يغطيها الجدول عند الإنشاء.",
-    "sched_treat_pending_leave_as_off": "اعتبار طلبات الإجازة المعلّقة كإجازة معتمدة أثناء التوليد.",
-    "sched_auto_rebuild_on_approve": "إعادة بناء الجدول تلقائيًا عند الموافقة على إجازة.",
-    "sched_auto_rebuild_on_reject": "إعادة بناء الجدول تلقائيًا عند رفض طلب إجازة.",
-    "sched_notify_admin_after_generate": "إرسال إشعار للمشرفين بعد توليد جدول جديد.",
-    "sched_allow_publish_overwrite": "السماح للنشر باستبدال الإسنادات التي أنشأها المجدول سابقًا."
+    "sched_min_available_buffer": "عدد كباتن إضافيين كاحتياطي.",
+    "sched_leave_overflow_action": "السلوك عند تجاوز حد الإجازات اليومية.",
+    "sched_week_starts_on": "أول يوم في الأسبوع.",
+    "sched_days_ahead": "عدد الأيام التي يغطيها الجدول.",
+    "sched_treat_pending_leave_as_off": "اعتبار الطلبات المعلّقة كإجازة.",
+    "sched_auto_rebuild_on_approve": "إعادة بناء الجدول عند الموافقة على إجازة.",
+    "sched_auto_rebuild_on_reject": "إعادة بناء الجدول عند رفض طلب.",
+    "sched_notify_admin_after_generate": "إشعار المشرفين بعد التوليد.",
+    "sched_allow_publish_overwrite": "السماح للنشر باستبدال الإسنادات القديمة."
   }
 };
