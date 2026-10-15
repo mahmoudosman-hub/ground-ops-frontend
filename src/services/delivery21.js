@@ -1,6 +1,6 @@
 /**
- * Ground OPS - Delivery 21 v4
- * Full Arabic translation for admin + Arabic hints on settings (working).
+ * Ground OPS - Delivery 21 v5
+ * Arabic translation for admin + Arabic settings descriptions (fixed).
  */
 (function () {
   'use strict';
@@ -66,65 +66,50 @@
   }
 
   // =====================================================================
-  // Translate settings descriptions (the English text under each setting)
-  // Strategy: find the leaf div whose text matches a hint key, then look
-  // for the nearest leaf div with longer text in the same row -> replace.
+  // Translate settings descriptions by using input[data-key]
   // =====================================================================
-  function translateSettingDescriptions() {
-    if (getLang() !== 'ar' || !hintsEnabled()) return;
+  function isArabicText(t) { return /[\u0600-\u06FF]/.test(t); }
+
+  function translateSettingsDescriptions() {
+    if (getLang() !== 'ar') return;
     var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
 
-    document.querySelectorAll('div').forEach(function (el) {
-      if (el.children.length > 0) return;
-      var txt = (el.textContent || '').trim();
-      if (!txt || txt.length > 60) return;
+    document.querySelectorAll('[data-key]').forEach(function (input) {
+      var key = input.getAttribute('data-key');
+      if (!key || !hints[key]) return;
 
-      // Match the label text against hint keys (with underscores or spaces)
-      var key = null;
-      if (hints[txt]) key = txt;
-      else {
-        var withUnderscore = txt.replace(/ /g, '_');
-        if (hints[withUnderscore]) key = withUnderscore;
-      }
-      if (!key) return;
-
-      // Look for a description div inside the same row
-      var searchDesc = function (container) {
-        if (!container) return null;
-        var divs = container.querySelectorAll('div');
-        for (var i = 0; i < divs.length; i++) {
-          var d = divs[i];
-          if (d === el) continue;
+      // Walk up the DOM to find the setting row, then replace the description
+      var node = input;
+      for (var level = 0; level < 6 && node; level++) {
+        // Find all leaf divs/p/small/span inside this container
+        var leaves = node.querySelectorAll('div, p, small, span');
+        for (var i = 0; i < leaves.length; i++) {
+          var d = leaves[i];
+          if (d === input) continue;
           if (d.children.length > 0) continue;
-          if (d.dataset.gopsArDesc === '1') return null;
+          if (d.dataset.gopsArDesc === '1') continue;
           var t = (d.textContent || '').trim();
-          if (t.length < 15 || t.length > 400) continue;
-          if (hints[t]) continue;
-          if (t.replace(/ /g, '_') === key) continue;
+          if (t.length < 20) continue;
+          if (t.length > 400) continue;
           if (/^\d+$/.test(t)) continue;
-          return d;
+          if (isArabicText(t)) continue;
+          if (t.indexOf('data-key') >= 0) continue;
+          if (t === key || t === key.replace(/_/g, ' ')) continue;
+          // This is the English description
+          d.dataset.gopsOrigDesc = t;
+          d.dataset.gopsArDesc = '1';
+          d.textContent = hints[key];
+          d.style.color = '#0a84ff';
+          d.style.fontWeight = '600';
+          break;
         }
-        return null;
-      };
-
-      var row = el.parentNode;
-      var descDiv = searchDesc(row);
-      if (!descDiv && row && row.parentNode) descDiv = searchDesc(row.parentNode);
-      if (!descDiv && row && row.parentNode && row.parentNode.parentNode) descDiv = searchDesc(row.parentNode.parentNode);
-
-      if (descDiv) {
-        descDiv.dataset.gopsOrigDesc = descDiv.textContent;
-        descDiv.dataset.gopsArDesc = '1';
-        descDiv.textContent = hints[key];
-        descDiv.style.color = '#0a84ff';
-        descDiv.style.fontWeight = '600';
+        node = node.parentElement;
       }
     });
   }
 
-  function restoreSettingDescriptions(root) {
-    if (!root) root = document.body;
-    root.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
+  function restoreSettingsDescriptions() {
+    document.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
       if (el.dataset.gopsOrigDesc) {
         el.textContent = el.dataset.gopsOrigDesc;
         el.style.color = '';
@@ -158,18 +143,6 @@
       el.setAttribute('data-gops-hint', '1');
       el.setAttribute('title', hints[key]);
     });
-    var divs = root.querySelectorAll('div');
-    for (var i = 0; i < divs.length; i++) {
-      var el = divs[i];
-      if (el.children.length > 0) continue;
-      if (el.dataset.gopsHintAttached === '1') continue;
-      var txt = (el.textContent || '').trim();
-      if (!txt || !hints[txt]) continue;
-      el.dataset.gopsHintAttached = '1';
-      el.setAttribute('title', hints[txt]);
-      el.style.cursor = 'help';
-      el.style.borderBottom = '1px dashed #b3b3b3';
-    }
   }
 
   function installLanguageButton(sidebar) {
@@ -214,8 +187,8 @@
     translateTextNodes(lang);
     translateAttributes(lang);
     attachHints();
-    if (lang === 'ar') translateSettingDescriptions();
-    else restoreSettingDescriptions();
+    if (lang === 'ar') translateSettingsDescriptions();
+    else restoreSettingsDescriptions();
     fixSelfieFab();
     hideOldLangButton();
     document.documentElement.lang = lang;
@@ -240,7 +213,7 @@
         if (getLang() === 'ar') {
           translateTextNodes('ar');
           translateAttributes('ar');
-          translateSettingDescriptions();
+          translateSettingsDescriptions();
         }
         attachHints();
       }, 500);
