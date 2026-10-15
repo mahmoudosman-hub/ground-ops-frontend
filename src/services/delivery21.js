@@ -1,6 +1,6 @@
 /**
  * Ground OPS - Delivery 21 v5
- * Arabic translation for admin + Arabic settings descriptions (fixed).
+ * Full Arabic translation for admin + Arabic hints on settings + working description translation.
  */
 (function () {
   'use strict';
@@ -66,50 +66,84 @@
   }
 
   // =====================================================================
-  // Translate settings descriptions by using input[data-key]
+  // Translate setting descriptions (English under each setting)
+  // Strategy: for each [data-key] input, walk up to find the row, then
+  // locate the leaf div with English description text and replace it.
   // =====================================================================
-  function isArabicText(t) { return /[\u0600-\u06FF]/.test(t); }
-
-  function translateSettingsDescriptions() {
-    if (getLang() !== 'ar') return;
+  function translateSettingDescriptions() {
+    if (getLang() !== 'ar' || !hintsEnabled()) return;
     var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
 
     document.querySelectorAll('[data-key]').forEach(function (input) {
       var key = input.getAttribute('data-key');
       if (!key || !hints[key]) return;
 
-      // Walk up the DOM to find the setting row, then replace the description
-      var node = input;
-      for (var level = 0; level < 6 && node; level++) {
-        // Find all leaf divs/p/small/span inside this container
-        var leaves = node.querySelectorAll('div, p, small, span');
-        for (var i = 0; i < leaves.length; i++) {
-          var d = leaves[i];
-          if (d === input) continue;
+      var row = input.parentElement;
+      for (var i = 0; i < 5 && row; i++) {
+        var divs = row.querySelectorAll('div');
+        var found = false;
+        for (var j = 0; j < divs.length; j++) {
+          var d = divs[j];
           if (d.children.length > 0) continue;
-          if (d.dataset.gopsArDesc === '1') continue;
-          var t = (d.textContent || '').trim();
-          if (t.length < 20) continue;
-          if (t.length > 400) continue;
-          if (/^\d+$/.test(t)) continue;
-          if (isArabicText(t)) continue;
-          if (t.indexOf('data-key') >= 0) continue;
-          if (t === key || t === key.replace(/_/g, ' ')) continue;
-          // This is the English description
-          d.dataset.gopsOrigDesc = t;
+          if (d.dataset.gopsArDesc === '1') { found = true; break; }
+          var txt = (d.textContent || '').trim();
+          if (txt.length < 15 || txt.length > 500) continue;
+          if (txt === key || txt.replace(/ /g, '_') === key) continue;
+          if (!/[A-Za-z]{4}/.test(txt)) continue;
+
+          d.dataset.gopsOrigDesc = txt;
           d.dataset.gopsArDesc = '1';
           d.textContent = hints[key];
           d.style.color = '#0a84ff';
           d.style.fontWeight = '600';
+          found = true;
           break;
         }
-        node = node.parentElement;
+        if (found) break;
+        row = row.parentElement;
+      }
+    });
+
+    // Fallback: handle any remaining settings-style divs where the key is shown as text
+    document.querySelectorAll('div').forEach(function (el) {
+      if (el.children.length > 0) return;
+      if (el.dataset.gopsArDesc === '1') return;
+      var txt = (el.textContent || '').trim();
+      if (!txt || txt.length > 60) return;
+
+      var key = null;
+      if (hints[txt]) key = txt;
+      else {
+        var withUnderscore = txt.replace(/ /g, '_');
+        if (hints[withUnderscore]) key = withUnderscore;
+      }
+      if (!key) return;
+
+      // Look for description in parent's siblings
+      var parent = el.parentNode;
+      if (!parent) return;
+      var sibs = parent.querySelectorAll('div');
+      for (var k = 0; k < sibs.length; k++) {
+        var sib = sibs[k];
+        if (sib === el) continue;
+        if (sib.children.length > 0) continue;
+        if (sib.dataset.gopsArDesc === '1') break;
+        var sTxt = (sib.textContent || '').trim();
+        if (sTxt.length < 15 || sTxt.length > 500) continue;
+        if (!/[A-Za-z]{4}/.test(sTxt)) continue;
+        sib.dataset.gopsOrigDesc = sTxt;
+        sib.dataset.gopsArDesc = '1';
+        sib.textContent = hints[key];
+        sib.style.color = '#0a84ff';
+        sib.style.fontWeight = '600';
+        break;
       }
     });
   }
 
-  function restoreSettingsDescriptions() {
-    document.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
+  function restoreSettingDescriptions(root) {
+    if (!root) root = document.body;
+    root.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
       if (el.dataset.gopsOrigDesc) {
         el.textContent = el.dataset.gopsOrigDesc;
         el.style.color = '';
@@ -143,6 +177,18 @@
       el.setAttribute('data-gops-hint', '1');
       el.setAttribute('title', hints[key]);
     });
+    var divs = root.querySelectorAll('div');
+    for (var i = 0; i < divs.length; i++) {
+      var el = divs[i];
+      if (el.children.length > 0) continue;
+      if (el.dataset.gopsHintAttached === '1') continue;
+      var txt = (el.textContent || '').trim();
+      if (!txt || !hints[txt]) continue;
+      el.dataset.gopsHintAttached = '1';
+      el.setAttribute('title', hints[txt]);
+      el.style.cursor = 'help';
+      el.style.borderBottom = '1px dashed #b3b3b3';
+    }
   }
 
   function installLanguageButton(sidebar) {
@@ -168,7 +214,18 @@
       btn.title = l === 'ar' ? 'Switch to English' : 'التبديل إلى العربية';
       hintsBox.checked = hintsEnabled();
     }
-    btn.onclick = function () { var next = getLang() === 'ar' ? 'en' : 'ar'; setLang(next); applyAll(); render(); };
+    btn.onclick = function () {
+      var next = getLang() === 'ar' ? 'en' : 'ar';
+      setLang(next);
+      if (next === 'ar') {
+        // Reset all ar-desc flags so descriptions get re-translated
+        document.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
+          delete el.dataset.gopsArDesc;
+        });
+      }
+      applyAll();
+      render();
+    };
     hintsBox.onchange = function () { setHints(hintsBox.checked); applyAll(); };
     render();
   }
@@ -187,8 +244,8 @@
     translateTextNodes(lang);
     translateAttributes(lang);
     attachHints();
-    if (lang === 'ar') translateSettingsDescriptions();
-    else restoreSettingsDescriptions();
+    if (lang === 'ar') translateSettingDescriptions();
+    else restoreSettingDescriptions();
     fixSelfieFab();
     hideOldLangButton();
     document.documentElement.lang = lang;
@@ -213,58 +270,20 @@
         if (getLang() === 'ar') {
           translateTextNodes('ar');
           translateAttributes('ar');
-          translateSettingsDescriptions();
+          translateSettingDescriptions();
         }
         attachHints();
       }, 500);
     });
     if (document.body) obs.observe(document.body, { childList: true, subtree: true });
+
+    // Also run once more after 1s (settings sometimes render late)
+    setTimeout(applyAll, 1000);
+    setTimeout(applyAll, 2500);
   }
 
   ensureDict(function () {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
   });
-  function translateSettingDescriptions() {
-    if (getLang() !== 'ar' || !hintsEnabled()) return;
-    var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
-
-    // Strategy: find every [data-key] input, walk up to find its row,
-    // then find the description div (color:#888 or similar) and replace it.
-    document.querySelectorAll('[data-key]').forEach(function (input) {
-      var key = input.getAttribute('data-key');
-      if (!key || !hints[key]) return;
-
-      var row = input.parentElement;
-      for (var i = 0; i < 5 && row; i++) {
-        // Look for a div inside this row that has descriptive English text
-        var divs = row.querySelectorAll('div');
-        var found = false;
-        for (var j = 0; j < divs.length; j++) {
-          var d = divs[j];
-          if (d.children.length > 0) continue;
-          if (d.dataset.gopsArDesc === '1') { found = true; break; }
-          var txt = (d.textContent || '').trim();
-          if (txt.length < 20 || txt.length > 500) continue;
-          // Must NOT be the setting key itself
-          if (txt === key || txt.replace(/ /g, '_') === key) continue;
-          // Must contain English letters
-          if (!/[A-Za-z]{5}/.test(txt)) continue;
-          // Must contain one of these marker words (typical description)
-          if (!/\(|default|Default|meters|minutes|seconds|hours|days|Enable|Disable|Require|Reject|Send|Allow|Alert|Max|Min|Number|List|Interval|Threshold|Radius|Duration|Timeout|Session|Password|Time/i.test(txt)) continue;
-
-          // Save original + replace
-          d.dataset.gopsOrigDesc = txt;
-          d.dataset.gopsArDesc = '1';
-          d.textContent = hints[key];
-          d.style.color = '#0a84ff';
-          d.style.fontWeight = '600';
-          found = true;
-          break;
-        }
-        if (found) break;
-        row = row.parentElement;
-      }
-    });
-  }
 })();
