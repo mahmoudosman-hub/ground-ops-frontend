@@ -211,3 +211,17 @@
     else boot();
   });
 })();
+
+// ===== Hide the old language button (from delivery3b) =====
+(function () {
+  function hideOldLangButton() {
+    var old = document.getElementById('gops-lang-btn');
+    if (old) {
+      try { old.remove(); } catch (e) { old.style.display = 'none'; }
+    }
+  }
+  hideOldLangButton();
+  setInterval(hideOldLangButton, 1500);
+  var obs = new MutationObserver(hideOldLangButton);
+  if (document.body) obs.observe(document.body, { childList: true, subtree: true });
+})();
