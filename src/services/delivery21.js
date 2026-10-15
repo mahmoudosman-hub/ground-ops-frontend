@@ -225,4 +225,46 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
   });
+  function translateSettingDescriptions() {
+    if (getLang() !== 'ar' || !hintsEnabled()) return;
+    var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
+
+    // Strategy: find every [data-key] input, walk up to find its row,
+    // then find the description div (color:#888 or similar) and replace it.
+    document.querySelectorAll('[data-key]').forEach(function (input) {
+      var key = input.getAttribute('data-key');
+      if (!key || !hints[key]) return;
+
+      var row = input.parentElement;
+      for (var i = 0; i < 5 && row; i++) {
+        // Look for a div inside this row that has descriptive English text
+        var divs = row.querySelectorAll('div');
+        var found = false;
+        for (var j = 0; j < divs.length; j++) {
+          var d = divs[j];
+          if (d.children.length > 0) continue;
+          if (d.dataset.gopsArDesc === '1') { found = true; break; }
+          var txt = (d.textContent || '').trim();
+          if (txt.length < 20 || txt.length > 500) continue;
+          // Must NOT be the setting key itself
+          if (txt === key || txt.replace(/ /g, '_') === key) continue;
+          // Must contain English letters
+          if (!/[A-Za-z]{5}/.test(txt)) continue;
+          // Must contain one of these marker words (typical description)
+          if (!/\(|default|Default|meters|minutes|seconds|hours|days|Enable|Disable|Require|Reject|Send|Allow|Alert|Max|Min|Number|List|Interval|Threshold|Radius|Duration|Timeout|Session|Password|Time/i.test(txt)) continue;
+
+          // Save original + replace
+          d.dataset.gopsOrigDesc = txt;
+          d.dataset.gopsArDesc = '1';
+          d.textContent = hints[key];
+          d.style.color = '#0a84ff';
+          d.style.fontWeight = '600';
+          found = true;
+          break;
+        }
+        if (found) break;
+        row = row.parentElement;
+      }
+    });
+  }
 })();
