@@ -205,3 +205,23 @@
   });
 
 })();
+// ===== Hide the old language button (from delivery3b) =====
+(function () {
+  function hideOldLangButton() {
+    // The old button has id "gops-lang-btn"
+    var old = document.getElementById('gops-lang-btn');
+    if (old) {
+      old.style.display = 'none';
+      old.setAttribute('hidden', '');
+      // Also remove it entirely after hiding
+      try { old.remove(); } catch (e) {}
+    }
+  }
+
+  // Run immediately + on every mutation (in case it's re-created)
+  hideOldLangButton();
+  setInterval(hideOldLangButton, 1500);
+
+  var obs = new MutationObserver(hideOldLangButton);
+  if (document.body) obs.observe(document.body, { childList: true, subtree: true });
+})();
