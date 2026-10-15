@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 21 v2
+ * Ground OPS - Delivery 21 v3
  */
 (function () {
   'use strict';
@@ -64,49 +64,73 @@
     }
   }
 
+  // Translate descriptions under settings - find key div, then its sibling description
+  function translateSettingDescriptions(root) {
+    if (getLang() !== 'ar' || !hintsEnabled()) return;
+    var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
+    if (!root) root = document.body;
+    var divs = root.querySelectorAll('div');
+    for (var i = 0; i < divs.length; i++) {
+      var el = divs[i];
+      if (el.children.length > 0) continue;
+      var txt = (el.textContent || '').trim();
+      if (!hints[txt]) continue;
+      var parent = el.parentNode;
+      if (!parent) continue;
+      var siblings = parent.querySelectorAll('div');
+      for (var j = 0; j < siblings.length; j++) {
+        var sib = siblings[j];
+        if (sib === el) continue;
+        if (sib.children.length > 0) continue;
+        if (sib.dataset.gopsArDesc === '1') continue;
+        var sibTxt = (sib.textContent || '').trim();
+        if (sibTxt === txt) continue;
+        sib.dataset.gopsOrigDesc = sibTxt;
+        sib.dataset.gopsArDesc = '1';
+        sib.textContent = hints[txt];
+        sib.style.color = '#0a84ff';
+        sib.style.fontWeight = '600';
+        break;
+      }
+    }
+  }
+
+  function restoreSettingDescriptions(root) {
+    if (!root) root = document.body;
+    root.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
+      if (el.dataset.gopsOrigDesc) {
+        el.textContent = el.dataset.gopsOrigDesc;
+        el.style.color = '';
+        el.style.fontWeight = '';
+        delete el.dataset.gopsArDesc;
+      }
+    });
+  }
+
+  function fixSelfieFab() {
+    var fab = document.getElementById('gops-sc-fab');
+    if (fab && fab.textContent !== '📸') {
+      fab.textContent = '📸';
+      fab.style.padding = '12px 14px';
+      fab.title = 'Selfie Checks';
+    }
+  }
+
+  function hideOldLangButton() {
+    var old = document.getElementById('gops-lang-btn');
+    if (old) { try { old.remove(); } catch (e) { old.style.display = 'none'; } }
+  }
+
   function attachHints(root) {
     if (!hintsEnabled()) return;
     var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
     if (!root) root = document.body;
-
     root.querySelectorAll('[data-key]:not([data-gops-hint])').forEach(function (el) {
       var key = el.getAttribute('data-key');
       if (!key || !hints[key]) return;
       el.setAttribute('data-gops-hint', '1');
       el.setAttribute('title', hints[key]);
     });
-
-    // Replace English descriptions under settings with Arabic
-    if (getLang() === 'ar') {
-      root.querySelectorAll('[data-key]').forEach(function (input) {
-        var key = input.getAttribute('data-key');
-        if (!key || !hints[key]) return;
-        var row = input.closest('div');
-        for (var i = 0; i < 4 && row; i++) {
-          var descEl = row.querySelector('div[style*="color:#888"], div[style*="color: #888"]');
-          if (descEl && !descEl.dataset.gopsArDesc) {
-            descEl.dataset.gopsArDesc = '1';
-            descEl.dataset.gopsOrigDesc = descEl.textContent;
-            descEl.textContent = hints[key];
-            descEl.style.color = '#0a84ff';
-            descEl.style.fontWeight = '600';
-            break;
-          }
-          row = row.parentElement;
-        }
-      });
-    } else {
-      // Restore English descriptions
-      root.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
-        if (el.dataset.gopsOrigDesc) {
-          el.textContent = el.dataset.gopsOrigDesc;
-          el.style.color = '';
-          el.style.fontWeight = '';
-          delete el.dataset.gopsArDesc;
-        }
-      });
-    }
-
     var divs = root.querySelectorAll('div');
     for (var i = 0; i < divs.length; i++) {
       var el = divs[i];
@@ -145,7 +169,7 @@
       hintsBox.checked = hintsEnabled();
     }
     btn.onclick = function () { var next = getLang() === 'ar' ? 'en' : 'ar'; setLang(next); applyAll(); render(); };
-    hintsBox.onchange = function () { setHints(hintsBox.checked); attachHints(); };
+    hintsBox.onchange = function () { setHints(hintsBox.checked); applyAll(); };
     render();
   }
 
@@ -163,6 +187,10 @@
     translateTextNodes(lang);
     translateAttributes(lang);
     attachHints();
+    if (lang === 'ar') translateSettingDescriptions();
+    else restoreSettingDescriptions();
+    fixSelfieFab();
+    hideOldLangButton();
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }
@@ -171,57 +199,30 @@
     var sidebar = findSidebar();
     if (sidebar) installLanguageButton(sidebar);
     applyAll();
-    var lastUrl = window.location.href;
+
     var pending = false;
-    function debouncedApply() {
+    var obs = new MutationObserver(function () {
       if (pending) return;
       pending = true;
       setTimeout(function () {
         pending = false;
         var s = findSidebar();
         if (s) installLanguageButton(s);
-        if (getLang() === 'ar') { translateTextNodes('ar'); translateAttributes('ar'); }
+        fixSelfieFab();
+        hideOldLangButton();
+        if (getLang() === 'ar') {
+          translateTextNodes('ar');
+          translateAttributes('ar');
+          translateSettingDescriptions();
+        }
         attachHints();
-      }, 400);
-    }
-    setInterval(function () {
-      if (window.location.href !== lastUrl) { lastUrl = window.location.href; debouncedApply(); }
-    }, 2000);
-    var sidebarTarget = null;
-    function watchForSidebar() {
-      if (sidebarTarget) return;
-      var s = findSidebar();
-      if (!s) return;
-      sidebarTarget = s;
-      if (getLang() === 'ar') translateTextNodes('ar', s);
-      installLanguageButton(s);
-    }
-    watchForSidebar();
-    setTimeout(watchForSidebar, 1500);
-    setTimeout(watchForSidebar, 3500);
-    var mainEl = document.querySelector('main, [role="main"], #gops-sch-panel, #app, #root');
-    if (mainEl) {
-      var obs = new MutationObserver(debouncedApply);
-      obs.observe(mainEl, { childList: true, subtree: false });
-    }
+      }, 300);
+    });
+    if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   }
 
   ensureDict(function () {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
   });
-})();
-
-// ===== Hide the old language button (from delivery3b) =====
-(function () {
-  function hideOldLangButton() {
-    var old = document.getElementById('gops-lang-btn');
-    if (old) {
-      try { old.remove(); } catch (e) { old.style.display = 'none'; }
-    }
-  }
-  hideOldLangButton();
-  setInterval(hideOldLangButton, 1500);
-  var obs = new MutationObserver(hideOldLangButton);
-  if (document.body) obs.observe(document.body, { childList: true, subtree: true });
 })();
