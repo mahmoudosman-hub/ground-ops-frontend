@@ -1,7 +1,7 @@
 /**
- * Ground OPS - Delivery 21
- * Full Arabic translation for the admin dashboard + Arabic tooltips on all settings.
- * The UI language button is in the sidebar.
+ * Ground OPS - Delivery 21 v2 (Performance-optimized)
+ * Full Arabic translation for admin + Arabic hints on settings.
+ * Uses targeted observation and debounced translation to stay fast.
  */
 (function () {
   'use strict';
@@ -16,7 +16,6 @@
   function hintsEnabled() { try { return localStorage.getItem(HINTS_ENABLED_KEY) !== 'false'; } catch (e) { return true; } }
   function setHints(v) { try { localStorage.setItem(HINTS_ENABLED_KEY, v ? 'true' : 'false'); } catch (e) {} }
 
-  // ---------- Ensure dictionary is loaded ----------
   function ensureDict(cb) {
     if (window.GOPS_ADMIN_I18N) return cb();
     var s = document.createElement('script');
@@ -26,17 +25,18 @@
     document.head.appendChild(s);
   }
 
-  // ---------- Walk text nodes and translate ----------
-  function translateTextNodes(lang) {
+  // ---------- Translate text nodes ----------
+  function translateTextNodes(lang, root) {
+    if (!root) root = document.body;
     var dict = (window.GOPS_ADMIN_I18N || {}).ui || {};
-    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
     var n;
     while ((n = walker.nextNode())) {
       var parent = n.parentNode;
       if (!parent) continue;
       var tag = parent.nodeName;
       if (tag === 'SCRIPT' || tag === 'STYLE') continue;
-      if (parent.id && parent.id.indexOf('gops-') === 0) continue; // our own injected UI
+      if (parent.id && parent.id.indexOf('gops-') === 0) continue;
 
       if (n.__gops_orig === undefined) {
         try { n.__gops_orig = n.nodeValue; } catch (e) { continue; }
@@ -48,70 +48,64 @@
 
       if (lang === 'ar' && dict[trimmed]) {
         n.nodeValue = orig.replace(trimmed, dict[trimmed]);
-      } else {
+      } else if (n.nodeValue !== orig) {
         n.nodeValue = orig;
       }
     }
   }
 
-  // ---------- Translate placeholders, titles, aria-labels ----------
-  function translateAttributes(lang) {
+  // ---------- Translate attributes ----------
+  function translateAttributes(lang, root) {
+    if (!root) root = document.body;
     var dict = (window.GOPS_ADMIN_I18N || {}).ui || {};
     var attrs = ['placeholder', 'aria-label', 'title'];
-    document.querySelectorAll('input, select, textarea, button, a, div, span').forEach(function (el) {
-      if (el.id && el.id.indexOf('gops-') === 0) return;
-      attrs.forEach(function (a) {
-        var v = el.getAttribute(a);
-        if (!v) return;
-        var cacheKey = '__gops_attr_' + a;
+    var els = root.querySelectorAll('input, select, textarea, button, a');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.id && el.id.indexOf('gops-') === 0) continue;
+      for (var a = 0; a < attrs.length; a++) {
+        var attr = attrs[a];
+        var v = el.getAttribute(attr);
+        if (!v) continue;
+        var cacheKey = '__gops_attr_' + attr;
         if (el[cacheKey] === undefined) el[cacheKey] = v;
         var orig = el[cacheKey];
-        if (lang === 'ar' && dict[orig]) el.setAttribute(a, dict[orig]);
-        else el.setAttribute(a, orig);
-      });
-    });
+        if (lang === 'ar' && dict[orig]) el.setAttribute(attr, dict[orig]);
+        else if (el.getAttribute(attr) !== orig) el.setAttribute(attr, orig);
+      }
+    }
   }
 
-  // ---------- Add Arabic tooltip to every settings row ----------
-  function applySettingHints() {
+  // ---------- Hints on settings rows ----------
+  function attachHints(root) {
     if (!hintsEnabled()) return;
     var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
-    document.querySelectorAll('[data-key]').forEach(function (el) {
+    if (!root) root = document.body;
+
+    // data-key inputs (Settings tab)
+    root.querySelectorAll('[data-key]:not([data-gops-hint])').forEach(function (el) {
       var key = el.getAttribute('data-key');
       if (!key || !hints[key]) return;
-      // Find the row wrapper (3 levels up usually)
-      var row = el.closest('div');
-      for (var i = 0; i < 4 && row; i++) {
-        var label = row.querySelector('div[style*="font-weight:600"]');
-        if (label) {
-          label.setAttribute('title', hints[key]);
-          label.style.cursor = 'help';
-          label.style.borderBottom = '1px dashed #b3b3b3';
-          break;
-        }
-        row = row.parentElement;
-      }
+      el.setAttribute('data-gops-hint', '1');
       el.setAttribute('title', hints[key]);
     });
-  }
 
-  // ---------- Also attach hints to spans showing the setting key ----------
-  function attachHintsToSettingKeys() {
-    if (!hintsEnabled()) return;
-    var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
-    document.querySelectorAll('div').forEach(function (el) {
-      if (el.children.length > 0) return;
+    // Setting key text nodes in labels
+    var spans = root.querySelectorAll('div');
+    for (var i = 0; i < spans.length; i++) {
+      var el = spans[i];
+      if (el.children.length > 0) continue;
+      if (el.dataset.gopsHintAttached === '1') continue;
       var txt = (el.textContent || '').trim();
-      if (!txt || !hints[txt]) return;
-      if (el.dataset.gopsHintAttached === '1') return;
+      if (!txt || !hints[txt]) continue;
       el.dataset.gopsHintAttached = '1';
       el.setAttribute('title', hints[txt]);
       el.style.cursor = 'help';
       el.style.borderBottom = '1px dashed #b3b3b3';
-    });
+    }
   }
 
-  // ---------- Language toggle button ----------
+  // ---------- Language button ----------
   function installLanguageButton(sidebar) {
     if (document.getElementById('gops-admin-lang-btn')) return;
     var wrap = document.createElement('div');
@@ -126,7 +120,6 @@
         '<div style="font-weight:600;font-size:12px;color:inherit;opacity:.8">💡 Hints (AR)</div>' +
         '<input type="checkbox" id="gops-admin-hints-toggle" style="width:18px;height:18px;cursor:pointer">' +
       '</div>';
-
     sidebar.appendChild(wrap);
 
     var btn = wrap.querySelector('#gops-admin-lang-toggle');
@@ -147,24 +140,11 @@
     };
     hintsBox.onchange = function () {
       setHints(hintsBox.checked);
-      applyAll();
-      render();
+      attachHints();
     };
     render();
   }
 
-  // ---------- Apply everything ----------
-  function applyAll() {
-    var lang = getLang();
-    translateTextNodes(lang);
-    translateAttributes(lang);
-    attachHintsToSettingKeys();
-    applySettingHints();
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  }
-
-  // ---------- Sidebar finder ----------
   function findSidebar() {
     var sels = ['.sidebar', 'nav.sidebar', 'aside.sidebar', '#sidebar', '.sidenav', '.side-nav', 'aside', 'nav[role="navigation"]'];
     for (var i = 0; i < sels.length; i++) {
@@ -174,54 +154,76 @@
     return null;
   }
 
-  // ---------- Periodic + mutation watching ----------
-  function tick() {
+  // ---------- Apply everything ----------
+  function applyAll() {
+    var lang = getLang();
+    translateTextNodes(lang);
+    translateAttributes(lang);
+    attachHints();
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }
+
+  // ---------- Boot ----------
+  function boot() {
     var sidebar = findSidebar();
     if (sidebar) installLanguageButton(sidebar);
-    if (getLang() === 'ar') {
-      translateTextNodes('ar');
-      translateAttributes('ar');
+    applyAll();
+
+    // Only re-run on major changes (debounced): every 5 seconds + on page changes
+    var lastUrl = window.location.href;
+    var pending = false;
+    function debouncedApply() {
+      if (pending) return;
+      pending = true;
+      setTimeout(function () {
+        pending = false;
+        var s = findSidebar();
+        if (s) installLanguageButton(s);
+        // Only translate if language is Arabic or if hints are on
+        if (getLang() === 'ar') {
+          translateTextNodes('ar');
+          translateAttributes('ar');
+        }
+        attachHints();
+      }, 400);
     }
-    attachHintsToSettingKeys();
-    applySettingHints();
+
+    // Watch URL changes (SPA navigation)
+    setInterval(function () {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        debouncedApply();
+      }
+    }, 2000);
+
+    // Watch only for sidebar (in case it appears late) - targeted observation
+    var sidebarTarget = null;
+    function watchForSidebar() {
+      if (sidebarTarget) return;
+      var s = findSidebar();
+      if (!s) return;
+      sidebarTarget = s;
+      if (getLang() === 'ar') {
+        translateTextNodes('ar', s);
+      }
+      installLanguageButton(s);
+    }
+    watchForSidebar();
+    setTimeout(watchForSidebar, 1500);
+    setTimeout(watchForSidebar, 3500);
+
+    // Watch only main content changes (not the entire body)
+    var mainEl = document.querySelector('main, [role="main"], #gops-sch-panel, #app, #root');
+    if (mainEl) {
+      var obs = new MutationObserver(debouncedApply);
+      obs.observe(mainEl, { childList: true, subtree: false }); // ← no deep subtree
+    }
   }
 
   ensureDict(function () {
-    applyAll();
-    setInterval(tick, 2500);
-
-    var obs = new MutationObserver(function () {
-      if (getLang() === 'ar') {
-        translateTextNodes('ar');
-        translateAttributes('ar');
-      }
-      attachHintsToSettingKeys();
-      applySettingHints();
-    });
-    if (document.body) obs.observe(document.body, { childList: true, subtree: true });
-
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick);
-    else tick();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
   });
 
-})();
-// ===== Hide the old language button (from delivery3b) =====
-(function () {
-  function hideOldLangButton() {
-    // The old button has id "gops-lang-btn"
-    var old = document.getElementById('gops-lang-btn');
-    if (old) {
-      old.style.display = 'none';
-      old.setAttribute('hidden', '');
-      // Also remove it entirely after hiding
-      try { old.remove(); } catch (e) {}
-    }
-  }
-
-  // Run immediately + on every mutation (in case it's re-created)
-  hideOldLangButton();
-  setInterval(hideOldLangButton, 1500);
-
-  var obs = new MutationObserver(hideOldLangButton);
-  if (document.body) obs.observe(document.body, { childList: true, subtree: true });
 })();
