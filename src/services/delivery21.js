@@ -1,5 +1,6 @@
 /**
- * Ground OPS - Delivery 21 v3
+ * Ground OPS - Delivery 21 v4
+ * Full Arabic translation for admin + Arabic hints on settings (working).
  */
 (function () {
   'use strict';
@@ -64,35 +65,61 @@
     }
   }
 
-  // Translate descriptions under settings - find key div, then its sibling description
-  function translateSettingDescriptions(root) {
+  // =====================================================================
+  // Translate settings descriptions (the English text under each setting)
+  // Strategy: find the leaf div whose text matches a hint key, then look
+  // for the nearest leaf div with longer text in the same row -> replace.
+  // =====================================================================
+  function translateSettingDescriptions() {
     if (getLang() !== 'ar' || !hintsEnabled()) return;
     var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
-    if (!root) root = document.body;
-    var divs = root.querySelectorAll('div');
-    for (var i = 0; i < divs.length; i++) {
-      var el = divs[i];
-      if (el.children.length > 0) continue;
+
+    document.querySelectorAll('div').forEach(function (el) {
+      if (el.children.length > 0) return;
       var txt = (el.textContent || '').trim();
-      if (!hints[txt]) continue;
-      var parent = el.parentNode;
-      if (!parent) continue;
-      var siblings = parent.querySelectorAll('div');
-      for (var j = 0; j < siblings.length; j++) {
-        var sib = siblings[j];
-        if (sib === el) continue;
-        if (sib.children.length > 0) continue;
-        if (sib.dataset.gopsArDesc === '1') continue;
-        var sibTxt = (sib.textContent || '').trim();
-        if (sibTxt === txt) continue;
-        sib.dataset.gopsOrigDesc = sibTxt;
-        sib.dataset.gopsArDesc = '1';
-        sib.textContent = hints[txt];
-        sib.style.color = '#0a84ff';
-        sib.style.fontWeight = '600';
-        break;
+      if (!txt || txt.length > 60) return;
+
+      // Match the label text against hint keys (with underscores or spaces)
+      var key = null;
+      if (hints[txt]) key = txt;
+      else {
+        var withUnderscore = txt.replace(/ /g, '_');
+        if (hints[withUnderscore]) key = withUnderscore;
       }
-    }
+      if (!key) return;
+
+      // Look for a description div inside the same row
+      var searchDesc = function (container) {
+        if (!container) return null;
+        var divs = container.querySelectorAll('div');
+        for (var i = 0; i < divs.length; i++) {
+          var d = divs[i];
+          if (d === el) continue;
+          if (d.children.length > 0) continue;
+          if (d.dataset.gopsArDesc === '1') return null;
+          var t = (d.textContent || '').trim();
+          if (t.length < 15 || t.length > 400) continue;
+          if (hints[t]) continue;
+          if (t.replace(/ /g, '_') === key) continue;
+          if (/^\d+$/.test(t)) continue;
+          return d;
+        }
+        return null;
+      };
+
+      var row = el.parentNode;
+      var descDiv = searchDesc(row);
+      if (!descDiv && row && row.parentNode) descDiv = searchDesc(row.parentNode);
+      if (!descDiv && row && row.parentNode && row.parentNode.parentNode) descDiv = searchDesc(row.parentNode.parentNode);
+
+      if (descDiv) {
+        descDiv.dataset.gopsOrigDesc = descDiv.textContent;
+        descDiv.dataset.gopsArDesc = '1';
+        descDiv.textContent = hints[key];
+        descDiv.style.color = '#0a84ff';
+        descDiv.style.fontWeight = '600';
+      }
+    });
   }
 
   function restoreSettingDescriptions(root) {
@@ -216,7 +243,7 @@
           translateSettingDescriptions();
         }
         attachHints();
-      }, 300);
+      }, 500);
     });
     if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   }
