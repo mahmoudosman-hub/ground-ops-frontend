@@ -100,7 +100,7 @@
   // ============================================================
   // EMPLOYEE: native attestation + selfie check polling
   // ============================================================
-  function wrapFetchForAttestation() {
+    function wrapFetchForAttestation() {
     if (window.__gopsD3FetchWrapped) return;
     window.__gopsD3FetchWrapped = true;
     var origFetch = window.fetch.bind(window);
@@ -113,8 +113,16 @@
           var parsed = JSON.parse(init.body);
           if (parsed && (parsed.action === 'checkIn' || parsed.action === 'checkOut')) {
             var isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+            
+            // 👇 السطرين الجديدين بتوع اكتشاف الآيفون 👇
+            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            
             parsed.payload = parsed.payload || {};
             parsed.payload.native_attestation = isNative;
+            
+            // 👇 السطر الجديد ده بيبعت العلامة للسيرفر 👇
+            parsed.payload.is_ios = isIOS;
+            
             init = Object.assign({}, init, { body: JSON.stringify(parsed) });
           }
         }
