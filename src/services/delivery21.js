@@ -1,6 +1,7 @@
 /**
- * Ground OPS - Delivery 21 v5
- * Full Arabic translation for admin + Arabic hints on settings + working description translation.
+ * Ground OPS - Delivery 21 v6
+ * Full Arabic translation for admin + Arabic hints on settings.
+ * FIX: Targets <small> tags and input[name] instead of data-key/div.
  */
 (function () {
   'use strict';
@@ -66,90 +67,44 @@
   }
 
   // =====================================================================
-  // Translate setting descriptions (English under each setting)
-  // Strategy: for each [data-key] input, walk up to find the row, then
-  // locate the leaf div with English description text and replace it.
+  // FIX: Translate setting descriptions inside <small> tags using input[name]
   // =====================================================================
   function translateSettingDescriptions() {
     if (getLang() !== 'ar' || !hintsEnabled()) return;
     var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
 
-    document.querySelectorAll('[data-key]').forEach(function (input) {
-      var key = input.getAttribute('data-key');
-      if (!key || !hints[key]) return;
+    // Find all inputs that have a 'name' attribute (like name="default_geofence_radius_meters")
+    var inputs = document.querySelectorAll('input[name]');
+    
+    for (var i = 0; i < inputs.length; i++) {
+      var input = inputs[i];
+      var key = input.getAttribute('name');
+      if (!key || !hints[key]) continue;
 
-      var row = input.parentElement;
-      for (var i = 0; i < 5 && row; i++) {
-        var divs = row.querySelectorAll('div');
-        var found = false;
-        for (var j = 0; j < divs.length; j++) {
-          var d = divs[j];
-          if (d.children.length > 0) continue;
-          if (d.dataset.gopsArDesc === '1') { found = true; break; }
-          var txt = (d.textContent || '').trim();
-          if (txt.length < 15 || txt.length > 500) continue;
-          if (txt === key || txt.replace(/ /g, '_') === key) continue;
-          if (!/[A-Za-z]{4}/.test(txt)) continue;
+      // The container is usually the .field div
+      var container = input.closest('.field') || input.parentElement;
+      if (!container) continue;
 
-          d.dataset.gopsOrigDesc = txt;
-          d.dataset.gopsArDesc = '1';
-          d.textContent = hints[key];
-          d.style.color = '#0a84ff';
-          d.style.fontWeight = '600';
-          found = true;
-          break;
+      // Find the <small> tag inside this container
+      var small = container.querySelector('small');
+      if (small) {
+        if (!small.dataset.gopsOrigDesc) {
+          small.dataset.gopsOrigDesc = small.textContent;
         }
-        if (found) break;
-        row = row.parentElement;
+        small.textContent = hints[key];
+        small.style.color = '#0a84ff'; // Highlight in blue to prove it worked
+        small.style.fontWeight = '600';
       }
-    });
-
-    // Fallback: handle any remaining settings-style divs where the key is shown as text
-    document.querySelectorAll('div').forEach(function (el) {
-      if (el.children.length > 0) return;
-      if (el.dataset.gopsArDesc === '1') return;
-      var txt = (el.textContent || '').trim();
-      if (!txt || txt.length > 60) return;
-
-      var key = null;
-      if (hints[txt]) key = txt;
-      else {
-        var withUnderscore = txt.replace(/ /g, '_');
-        if (hints[withUnderscore]) key = withUnderscore;
-      }
-      if (!key) return;
-
-      // Look for description in parent's siblings
-      var parent = el.parentNode;
-      if (!parent) return;
-      var sibs = parent.querySelectorAll('div');
-      for (var k = 0; k < sibs.length; k++) {
-        var sib = sibs[k];
-        if (sib === el) continue;
-        if (sib.children.length > 0) continue;
-        if (sib.dataset.gopsArDesc === '1') break;
-        var sTxt = (sib.textContent || '').trim();
-        if (sTxt.length < 15 || sTxt.length > 500) continue;
-        if (!/[A-Za-z]{4}/.test(sTxt)) continue;
-        sib.dataset.gopsOrigDesc = sTxt;
-        sib.dataset.gopsArDesc = '1';
-        sib.textContent = hints[key];
-        sib.style.color = '#0a84ff';
-        sib.style.fontWeight = '600';
-        break;
-      }
-    });
+    }
   }
 
   function restoreSettingDescriptions(root) {
     if (!root) root = document.body;
-    root.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
-      if (el.dataset.gopsOrigDesc) {
-        el.textContent = el.dataset.gopsOrigDesc;
-        el.style.color = '';
-        el.style.fontWeight = '';
-        delete el.dataset.gopsArDesc;
-      }
+    root.querySelectorAll('small[data-gops-orig-desc]').forEach(function (el) {
+      el.textContent = el.dataset.gopsOrigDesc;
+      el.style.color = '';
+      el.style.fontWeight = '';
+      delete el.dataset.gopsOrigDesc;
     });
   }
 
@@ -171,24 +126,14 @@
     if (!hintsEnabled()) return;
     var hints = (window.GOPS_ADMIN_I18N || {}).hints || {};
     if (!root) root = document.body;
-    root.querySelectorAll('[data-key]:not([data-gops-hint])').forEach(function (el) {
-      var key = el.getAttribute('data-key');
+    
+    // FIX: Look for input[name] instead of [data-key]
+    root.querySelectorAll('input[name]:not([data-gops-hint])').forEach(function (el) {
+      var key = el.getAttribute('name');
       if (!key || !hints[key]) return;
       el.setAttribute('data-gops-hint', '1');
       el.setAttribute('title', hints[key]);
     });
-    var divs = root.querySelectorAll('div');
-    for (var i = 0; i < divs.length; i++) {
-      var el = divs[i];
-      if (el.children.length > 0) continue;
-      if (el.dataset.gopsHintAttached === '1') continue;
-      var txt = (el.textContent || '').trim();
-      if (!txt || !hints[txt]) continue;
-      el.dataset.gopsHintAttached = '1';
-      el.setAttribute('title', hints[txt]);
-      el.style.cursor = 'help';
-      el.style.borderBottom = '1px dashed #b3b3b3';
-    }
   }
 
   function installLanguageButton(sidebar) {
@@ -218,9 +163,8 @@
       var next = getLang() === 'ar' ? 'en' : 'ar';
       setLang(next);
       if (next === 'ar') {
-        // Reset all ar-desc flags so descriptions get re-translated
-        document.querySelectorAll('[data-gops-ar-desc]').forEach(function (el) {
-          delete el.dataset.gopsArDesc;
+        document.querySelectorAll('[data-gops-orig-desc]').forEach(function (el) {
+          delete el.dataset.gopsOrigDesc;
         });
       }
       applyAll();
@@ -277,7 +221,6 @@
     });
     if (document.body) obs.observe(document.body, { childList: true, subtree: true });
 
-    // Also run once more after 1s (settings sometimes render late)
     setTimeout(applyAll, 1000);
     setTimeout(applyAll, 2500);
   }
