@@ -6,31 +6,22 @@
   if (window.__gopsD24CacheInstalled) return;
   window.__gopsD24CacheInstalled = true;
 
-  // =====================================================================
-  // 1. Local Caching & Background Prefetching
-  // =====================================================================
   var origFetch = window.fetch;
   
   var CACHE_TTL = {
-    'getSettings': 60 * 60 * 1000,
-    'getBranches': 60 * 60 * 1000,
-    'getShifts': 60 * 60 * 1000,
-    'getTodaySchedule': 2 * 60 * 1000,
-    'getMyRequests': 5 * 60 * 1000,
-    'getMySchedule': 5 * 60 * 1000
+    'getSettings': 60 * 60 * 1000, 'getBranches': 60 * 60 * 1000, 'getShifts': 60 * 60 * 1000,
+    'getTodaySchedule': 2 * 60 * 1000, 'getMyRequests': 5 * 60 * 1000, 'getMySchedule': 5 * 60 * 1000
   };
 
   window.fetch = function (input, init) {
     try {
       var isOurCall = (typeof input === 'string' && /exec/i.test(input)) || (input && input.url && /exec/i.test(input.url));
-      
       if (isOurCall && init && init.method === 'POST' && typeof init.body === 'string') {
         var parsed = JSON.parse(init.body);
         var action = parsed.action;
         var cacheKey = 'gops.cache.' + action;
 
-        var mutations = ['checkIn', 'checkOut', 'startBreak', 'endBreak', 'submitLocation', 
-                         'createRequest', 'submitRequest', 'cancelRequest', 'respondToRequest'];
+        var mutations = ['checkIn', 'checkOut', 'startBreak', 'endBreak', 'submitLocation', 'createRequest', 'submitRequest', 'cancelRequest', 'respondToRequest'];
         if (mutations.indexOf(action) >= 0) {
           localStorage.removeItem('gops.cache.getTodaySchedule');
           localStorage.removeItem('gops.cache.getMyRequests');
@@ -43,13 +34,9 @@
           if (cachedStr) {
             var cached = JSON.parse(cachedStr);
             if (Date.now() - cached.time < CACHE_TTL[action]) {
-              return Promise.resolve({
-                ok: true,
-                json: function() { return Promise.resolve(cached.data); }
-              });
+              return Promise.resolve({ ok: true, json: function() { return Promise.resolve(cached.data); } });
             }
           }
-
           return origFetch(input, init).then(function (res) {
             var clonedRes = res.clone();
             clonedRes.json().then(function (data) {
@@ -71,17 +58,11 @@
       if (!sessRaw) return;
       var sess = JSON.parse(sessRaw);
       if (!sess || !sess.token) return;
-
       var apiUrl = window.API_URL || window.GOPS_CONFIG?.API_URL || window.CONFIG?.API_URL;
       if (!apiUrl) return;
       var headers = { 'Content-Type': 'text/plain;charset=utf-8' };
-      
-      if (!localStorage.getItem('gops.cache.getMySchedule')) {
-        fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getMySchedule', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
-      }
-      if (!localStorage.getItem('gops.cache.getMyRequests')) {
-        fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getMyRequests', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
-      }
+      if (!localStorage.getItem('gops.cache.getMySchedule')) fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getMySchedule', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
+      if (!localStorage.getItem('gops.cache.getMyRequests')) fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getMyRequests', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
       fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getTodaySchedule', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
     } catch (e) {}
   }
@@ -90,22 +71,17 @@
   else { window.addEventListener('load', function () { setTimeout(prefetchData, 3000); }); }
   setInterval(prefetchData, 4 * 60 * 1000);
 
-
-  // =====================================================================
-  // 2. Simple & Fast GPS Override (بدون تعقيد)
-  // =====================================================================
+  // ===== 2. Fast GPS Override (Simple & Reliable) =====
   if (navigator.geolocation) {
     var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
-    
     navigator.geolocation.getCurrentPosition = function(success, error, options) {
-      // بنجبر المتصفح يستخدم GPS ويرفض أي إشارة قديمة
+      // بنجبره يستخدم الـ GPS، وممنوع ياخد لوكيشن قديم، والحد الأقصى للانتظار 8 ثواني
       var robustOptions = Object.assign({}, options, {
         enableHighAccuracy: true,
         maximumAge: 0,
-        timeout: 8000 // لو مجابش إشارة في 8 ثواني، هيرجع إيرور فوراً بدل ما يعلق
+        timeout: 8000 
       });
       origGetCurrentPosition.call(navigator.geolocation, success, error, robustOptions);
     };
   }
-
 })();
