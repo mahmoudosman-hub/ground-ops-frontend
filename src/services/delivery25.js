@@ -9,7 +9,6 @@
   var mapInstance = null;
   var markersLayer = null;
 
-  // دالة مساعدة لجلب البيانات
   function apiCall(action, payload) {
     var token = localStorage.getItem('gops.session.admin');
     if (token) { try { token = JSON.parse(token).token; } catch(e){} }
@@ -24,7 +23,6 @@
     });
   }
 
-  // تحميل مكتبة Leaflet لو مش موجودة
   function loadLeaflet(cb) {
     if (typeof L !== 'undefined') return cb();
     var css = document.createElement('link');
@@ -61,28 +59,33 @@
     loadLeaflet(function() {
       if (mapInstance) mapInstance.remove();
       
-      // إنشاء الخريطة (مركزها القاهرة مبدئياً)
+      // إنشاء الخريطة
       mapInstance = L.map('gops-map-container').setView([30.0444, 31.2357], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      
+      // تغيير لينك الخريطة لسيرفر أسرع وأكثر استقراراً
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
         attribution: '© OpenStreetMap'
       }).addTo(mapInstance);
 
       markersLayer = L.layerGroup().addTo(mapInstance);
+
+      // 👇 السطر السحري اللي بيجبر الخريطة تحمل الصور بعد ما النافذة بتفتح
+      setTimeout(function() {
+        mapInstance.invalidateSize();
+      }, 400);
 
       function refreshMap() {
         apiCall('getLiveMapData').then(function(data) {
           if (!mapInstance) return;
           markersLayer.clearLayers();
           
-          if (!data.employees || !data.employees.length) {
-             return; 
-          }
+          if (!data.employees || !data.employees.length) return;
 
           var bounds = L.latLngBounds();
           var branchCirclesDrawn = {};
 
           data.employees.forEach(function(emp) {
-            // 1. رسم نطاق الفرع (مرة واحدة بس لكل فرع)
             if (!branchCirclesDrawn[emp.branch_name] && emp.branch_lat && emp.branch_lng) {
               L.circle([emp.branch_lat, emp.branch_lng], {
                 color: '#0a84ff', fillColor: '#0a84ff', fillOpacity: 0.1, radius: emp.branch_radius
@@ -90,7 +93,6 @@
               branchCirclesDrawn[emp.branch_name] = true;
             }
 
-            // 2. رسم الكابتن
             if (emp.last_lat && emp.last_lng) {
               var color = '#1e8e3e'; // أخضر (جوه)
               if (emp.is_stale) color = '#888'; // رمادي (قديم/مقفول)
@@ -120,11 +122,10 @@
       }
 
       refreshMap();
-      mapInterval = setInterval(refreshMap, 30000); // تحديث كل 30 ثانية
+      mapInterval = setInterval(refreshMap, 30000);
     });
   }
 
-  // إضافة الزرار في القائمة الجانبية
   function injectMenuButton() {
     if (document.getElementById('gops-live-map-btn')) return;
     var nav = document.querySelector('.sidebar, nav.sidebar, aside.sidebar, #sidebar');
@@ -139,13 +140,10 @@
     nav.appendChild(a);
   }
 
-  // التشغيل
   if (document.readyState === 'complete') {
     setTimeout(injectMenuButton, 2000);
   } else {
     window.addEventListener('load', function(){ setTimeout(injectMenuButton, 2000); });
   }
-  
-  // Fallback لو القائمة اتأخرت في التحميل
   setInterval(injectMenuButton, 5000);
 })();
