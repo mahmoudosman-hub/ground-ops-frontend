@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 24 (Local Caching, Prefetching & Last-Known Location Fallback)
+ * Ground OPS - Delivery 24 (Local Caching, Prefetching & Native-First GPS)
  */
 (function () {
   'use strict';
@@ -73,91 +73,39 @@
 
 
   // =====================================================================
-  // 2. Smart GPS + Last-Known Location Fallback
+  // 2. Native-First GPS (بنجيب اللوكيشن من التطبيق الأصلي فوراً)
   // =====================================================================
   if (navigator.geolocation) {
     var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
     
     navigator.geolocation.getCurrentPosition = function(success, error, options) {
-      var isFinished = false;
-      var hardTimer;
-
-      // دالة مساعدة عشان تجيب آخر لوكيشن من السيرفر لو الـ GPS فشل
-      function fetchLastKnownLocation(errReason) {
-        try {
-          var sessRaw = localStorage.getItem('gops.session.employee');
-          var sess = sessRaw ? JSON.parse(sessRaw) : null;
-          var apiUrl = window.API_URL || window.GOPS_CONFIG?.API_URL || window.CONFIG?.API_URL;
-          
-          if (sess && sess.token && apiUrl) {
-            // بنسأل السيرفر على حالة الكابتن عشان نجيب آخر لوكيشن
-            fetch(apiUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({ action: 'getTodaySchedule', token: sess.token, payload: {}, client: 'fallback' })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-               // لو لقينا لوكيشن قديم في الرد
-               if (data && data.success && data.data && data.data.tracking && data.data.tracking.last_location_at) {
-                  var trk = data.data.tracking;
-                  // بنجيب الإحداثيات من الـ LiveState
-                  // (هنا بنفترض إن الـ tracking بيرجع lat/lng، لو مش بيرجعهم هنستخدم المسافة)
-                  success({
+      
+      // 1. لو إحنا جوه تطبيق أندرويد (Capacitor)
+      if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+        var bridge = window.Capacitor.Plugins.GopsLocation;
+        
+        if (bridge && bridge.getCurrentPosition) {
+            // بنطلب اللوكيشن من التطبيق الأصلي (ملف Java)
+            bridge.getCurrentPosition({ timeoutMs: 8000 }).then(function(res) {
+                // التطبيق رجع لوكيشن، بنبعته للواجهة على طول
+                success({
                     coords: {
-                      latitude: trk.lastLatitude || 0,
-                      longitude: trk.lastLongitude || 0,
-                      accuracy: trk.lastAccuracy || 50
+                        latitude: res.latitude,
+                        longitude: res.longitude,
+                        accuracy: res.accuracy || 10
                     },
-                    timestamp: Date.parse(trk.last_location_at)
-                  });
-                  return;
-               }
-               // لو مفيش، نرجع الإيرور الأصلي
-               if (error) error(errReason);
-            })
-            .catch(function() { if (error) error(errReason); });
-          } else {
-            if (error) error(errReason);
-          }
-        } catch (e) {
-          if (error) error(errReason);
+                    timestamp: res.timestamp || Date.now()
+                });
+            }).catch(function(err) {
+                // لو التطبيق الأصلي فشل، بنجرب المتصفح كخطة أخيرة
+                origGetCurrentPosition.call(navigator.geolocation, success, error, options);
+            });
+            return;
         }
       }
 
-      // 1. مؤقت قسري: لو الكود خد أكتر من 12 ثانية
-      hardTimer = setTimeout(function() {
-        if (isFinished) return;
-        isFinished = true;
-        fetchLastKnownLocation({ code: 3, message: 'GPS Timeout - Fallback triggered.' });
-      }, 12000);
-
-      function finishSuccess(pos) {
-        if (isFinished) return;
-        isFinished = true;
-        clearTimeout(hardTimer);
-        if (success) success(pos);
-      }
-
-      function finishError(err) {
-        if (isFinished) return;
-        isFinished = true;
-        clearTimeout(hardTimer);
-        fetchLastKnownLocation(err);
-      }
-
-      // 2. المحاولة العادية للـ GPS
-      var robustOptions = Object.assign({}, options, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-      });
-
-      try {
-        origGetCurrentPosition.call(navigator.geolocation, finishSuccess, finishError, robustOptions);
-      } catch (e) {
-        finishError(e);
-      }
+      // 2. لو إحنا على المتصفح العادي (PWA)
+      origGetCurrentPosition.call(navigator.geolocation, success, error, options);
     };
   }
 })();
