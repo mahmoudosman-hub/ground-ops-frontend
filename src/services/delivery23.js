@@ -43,7 +43,9 @@
       var app = initializeApp(firebaseConfig);
       var messaging = getMessaging(app);
 
-      var registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      // التعديل هنا: ضفنا نقطة قبل السلاش عشان يقرا من نفس الفولدر
+      var registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+      
       var currentToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
 
       if (currentToken) {
