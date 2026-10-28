@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 23 v3 (Automatic + Manual Fallback)
+ * Ground OPS - Delivery 23 v4 (Fully Automatic via First Click)
  */
 (function () {
   'use strict';
@@ -34,7 +34,6 @@
       var app = initializeApp(firebaseConfig);
       var messaging = getMessaging(app);
 
-      // التعديل هنا: مسار صحيح للـ Service Worker
       var registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
       var currentToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
 
@@ -50,12 +49,12 @@
               action: 'registerPushToken',
               token: sess.token,
               payload: { token: currentToken },
-              client: 'auto-register/1.0'
+              client: 'auto-register/4.0'
             })
           });
           console.log("✅ Token registered automatically for:", sess.token.substring(0, 10));
           var btn = document.getElementById('gops-enable-notif-btn');
-          if (btn) btn.remove();
+          if (btn) btn.remove(); // إخفاء الزرار لو كان موجود
         }
       }
     } catch (err) {
@@ -68,12 +67,9 @@
       var permission = await Notification.requestPermission();
       if (permission === 'granted') {
         await registerToken();
-        alert('✅ تم تفعيل الإشعارات بنجاح!');
-      } else {
-        alert('تم رفض الإشعارات. يرجى تفعيلها من إعدادات المتصفح.');
       }
     } catch (err) {
-      alert('حدث خطأ: ' + err.message);
+      console.error('Notification request error:', err);
     }
   }
 
@@ -81,24 +77,24 @@
     if (!getSession()) return;
     if (!('Notification' in window)) return;
     
-    // 1. لو الإذن متأكد منه خلاص، نسجل التوكن تلقائياً
+    // لو الإذن متأكد منه خلاص، نسجل التوكن فوراً
     if (Notification.permission === 'granted') {
       registerToken();
       return;
     }
 
-    // 2. لو الإذن مش متأكد منه (default)، نطلع الزرار
-    if (document.getElementById('gops-enable-notif-btn')) return;
-
-    var btn = document.createElement('button');
-    btn.id = 'gops-enable-notif-btn';
-    btn.innerHTML = '🔔 تفعيل الإشعارات (مطلوب)';
-    btn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99999;padding:12px 24px;background:#e67e22;color:#fff;font-weight:bold;font-size:16px;border:none;border-radius:25px;box-shadow:0 4px 15px rgba(230,126,34,0.4);cursor:pointer;';
-    btn.onclick = requestNotificationPermission;
-    document.body.appendChild(btn);
+    // لو الإذن default (مطلبش قبل كده)، مش هنطلع زرار، هنستنى أول ضغطة من الكابتن
+    if (Notification.permission === 'default') {
+        document.body.addEventListener('click', function initOnClick() {
+            requestNotificationPermission();
+            document.body.removeEventListener('click', initOnClick);
+        }, { once: true });
+    }
   }
 
-  // تشغيل التلقائي كل 5 ثواني (عشان لو الكابتن لسه مسجل دخول)
-  setInterval(checkAndRegister, 5000);
+  // التشغيل
+  setInterval(checkAndRegister, 3000);
+  if (document.readyState === 'complete') checkAndRegister();
+  else window.addEventListener('load', checkAndRegister);
 
 })();
