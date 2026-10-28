@@ -1,6 +1,5 @@
 /**
- * Ground OPS - Delivery 23 v2
- * Adds a manual button for notifications to bypass browser auto-block.
+ * Ground OPS - Delivery 23 v2 (Manual Notification Button)
  */
 (function () {
   'use strict';
@@ -73,20 +72,17 @@
   }
 
   function checkAndShowButton() {
-    if (!getSession()) return; // مسجلش دخول
+    if (!getSession()) return;
     if (!('Notification' in window)) return;
     
-    // لو الإشعارات مفعلة خلاص، مفيش داعي للزرار
     if (Notification.permission === 'granted') {
       var existing = document.getElementById('gops-enable-notif-btn');
       if (existing) existing.remove();
       return;
     }
 
-    // لو فيه زرار موجود، ميعملش واحد تاني
     if (document.getElementById('gops-enable-notif-btn')) return;
 
-    // إنشاء الزرار
     var btn = document.createElement('button');
     btn.id = 'gops-enable-notif-btn';
     btn.innerHTML = '🔔 تفعيل الإشعارات (مطلوب)';
@@ -95,7 +91,6 @@
     document.body.appendChild(btn);
   }
 
-  // نستنى التطبيق يحمل ويسجل الدخول، وبعدين نطلع الزرار
   setInterval(checkAndShowButton, 3000);
 
 })();
