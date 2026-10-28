@@ -11,10 +11,12 @@
   
   // الحاجات اللي هنحفظها في الموبايل (الوقت بالمللي ثانية)
   var CACHE_TTL = {
-    'getSettings': 60 * 60 * 1000,  // إعدادات النظام (ساعة)
-    'getBranches': 60 * 60 * 1000,  // الفروع (ساعة)
-    'getShifts': 60 * 60 * 1000,    // الورديات (ساعة)
-    'getTodaySchedule': 2 * 60 * 1000 // شيفت اليوم (دقيقتين)
+    'getSettings': 60 * 60 * 1000,       // إعدادات النظام (ساعة)
+    'getBranches': 60 * 60 * 1000,       // الفروع (ساعة)
+    'getShifts': 60 * 60 * 1000,         // الورديات (ساعة)
+    'getTodaySchedule': 2 * 60 * 1000,   // شيفت اليوم (دقيقتين)
+    'getMyRequests': 5 * 60 * 1000,      // طلبات الكابتن (5 دقايق)
+    'getMySchedule': 5 * 60 * 1000       // جدول الكابتن (5 دقايق)
   };
 
   window.fetch = function (input, init) {
@@ -27,9 +29,12 @@
         var cacheKey = 'gops.cache.' + action;
 
         // 1. لو ده طلب بيغير بيانات (زي حضور أو انصراف)، نمسح الكاش عشان يتحدث فوراً
-        var mutations = ['checkIn', 'checkOut', 'startBreak', 'endBreak', 'submitLocation', 'getPendingSelfieCheck'];
+        var mutations = ['checkIn', 'checkOut', 'startBreak', 'endBreak', 'submitLocation', 
+                         'createRequest', 'submitRequest', 'cancelRequest', 'respondToRequest'];
         if (mutations.indexOf(action) >= 0) {
           localStorage.removeItem('gops.cache.getTodaySchedule');
+          localStorage.removeItem('gops.cache.getMyRequests');
+          localStorage.removeItem('gops.cache.getMySchedule');
           return origFetch(input, init);
         }
 
