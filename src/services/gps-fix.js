@@ -1,44 +1,40 @@
 /**
- * GPS Timeout Fix - Prevents infinite loading on Check GPS
+ * Ultimate GPS Safety Net
  */
 (function () {
   'use strict';
   
-  if (navigator.geolocation) {
-    var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
-    
-    navigator.geolocation.getCurrentPosition = function(success, error, options) {
-      var isFinished = false;
-      var timer = setTimeout(function() {
-        if (isFinished) return;
-        isFinished = true;
-        if (error) error({ code: 3, message: 'GPS Timeout - Please ensure GPS is on and try again.' });
-      }, 10000); // 10 ثواني كحد أقصى
-
-      var robustOptions = Object.assign({}, options, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 9000 
-      });
-
-      try {
-        origGetCurrentPosition.call(navigator.geolocation, function(pos) {
-          if (isFinished) return;
-          isFinished = true;
-          clearTimeout(timer);
-          if (success) success(pos);
-        }, function(err) {
-          if (isFinished) return;
-          isFinished = true;
-          clearTimeout(timer);
-          if (error) error(err);
-        }, robustOptions);
-      } catch (e) {
-        if (isFinished) return;
-        isFinished = true;
-        clearTimeout(timer);
-        if (error) error(e);
-      }
-    };
+  // 1. إجبار التطبيق الأصلي على الرد (عشان لو الجافا علقت)
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GopsLocation) {
+    var bridge = window.Capacitor.Plugins.GopsLocation;
+    if (bridge.getCurrentPosition && !bridge.__timeoutPatched) {
+      var orig = bridge.getCurrentPosition;
+      bridge.getCurrentPosition = function(opts) {
+        var p = orig.call(bridge, opts);
+        var timeout = new Promise(function(_, reject) {
+          setTimeout(function() { reject(new Error('Native GPS Timeout')); }, 12000);
+        });
+        return Promise.race([p, timeout]);
+      };
+      bridge.__timeoutPatched = true;
+    }
   }
+
+  // 2. مسح علامة التحميل من الزرار لو علقت
+  setInterval(function() {
+    var btns = document.querySelectorAll('button');
+    btns.forEach(function(b) {
+      if (b.innerText && b.innerText.includes('Getting location') && b.disabled) {
+        if (!b.dataset.stuckTime) b.dataset.stuckTime = Date.now();
+        if (Date.now() - b.dataset.stuckTime > 13000) {
+          b.innerText = 'Check GPS';
+          b.disabled = false;
+          delete b.dataset.stuckTime;
+          alert('تعذر جلب الموقع. يرجى التأكد من تشغيل الـ GPS والمحاولة في مكان مفتوح.');
+        }
+      } else {
+        delete b.dataset.stuckTime;
+      }
+    });
+  }, 1000);
 })();
