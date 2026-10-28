@@ -76,3 +76,27 @@
     return origFetch(input, init);
   };
 })();
+// ===== FIX: Ensure High-Accuracy Real GPS (No Network/Stale Location) =====
+(function() {
+  if (navigator.geolocation) {
+    var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
+    
+    navigator.geolocation.getCurrentPosition = function(success, error, options) {
+      // إعدادات قوية: نرفض أي لوكيشن قديم، ونطلب دقة عالية جداً
+      var robustOptions = Object.assign({}, options, {
+        enableHighAccuracy: true, // نجبره يستخدم GPS
+        maximumAge: 0,            // ممنوع ياخد لوكيشن محفوظ (حتى لو من ثانية)
+        timeout: 15000            // لو ملقاش إشارة في 15 ثانية، يرجع إيرور بدل ما يلف للأبد
+      });
+
+      // بننادي الدالة الأصلية بالإعدادات القوية دي
+      origGetCurrentPosition.call(navigator.geolocation, success, function(err) {
+        // لو حصل إيرور (زي إنه ملقاش إشارة)، بنقوله رسالة واضحة
+        if (err.code === 3) { // Timeout
+          alert('إشارة الـ GPS ضعيفة أو بطيئة. يرجى التأكد من فتح الـ Location والمحاولة مرة أخرى.');
+        }
+        if (error) error(err);
+      }, robustOptions);
+    };
+  }
+})();
