@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 24 (Local Caching, Prefetching & Smart Fallback GPS)
+ * Ground OPS - Delivery 24 (Local Caching, Prefetching & True Fallback GPS)
  */
 (function () {
   'use strict';
@@ -73,26 +73,50 @@
 
 
   // =====================================================================
-  // 2. Smart GPS with Fallback (تحديد الموقع بـ GPS أو بالنت كاحتياطي)
+  // 2. True Fallback GPS (GPS أولاً، ثم نت، ثم إيرور)
   // =====================================================================
   if (navigator.geolocation) {
     var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
     
     navigator.geolocation.getCurrentPosition = function(success, error, options) {
-      
-      // المحاولة الأولى: GPS (دقة عالية، 8 ثواني كحد أقصى)
-      var gpsOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 };
-      
-      origGetCurrentPosition.call(navigator.geolocation, success, function(err) {
-        // لو الـ GPS فشل (تايم أوت أو مفيش إشارة)، نعمل المحاولة التانية
-        console.log('GPS failed, falling back to network...');
-        
-        // المحاولة التانية: Network (دقة أقل، عشان الكابتن ميتعلقش)
+      var isFinished = false;
+
+      // مؤقت قسري: لو الكود كله خد أكتر من 15 ثانية، نقفل ونطلع إيرور
+      var hardTimer = setTimeout(function() {
+        if (isFinished) return;
+        isFinished = true;
+        if (error) error({ code: 3, message: 'Timeout - Could not get any location.' });
+      }, 15000); 
+
+      function finishSuccess(pos) {
+        if (isFinished) return;
+        isFinished = true;
+        clearTimeout(hardTimer);
+        if (success) success(pos);
+      }
+
+      function finishError(err) {
+        if (isFinished) return;
+        isFinished = true;
+        clearTimeout(hardTimer);
+        if (error) error(err);
+      }
+
+      // 1. المحاولة الأولى: GPS (دقة عالية، 7 ثواني)
+      var gpsOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 7000 };
+
+      origGetCurrentPosition.call(navigator.geolocation, function(pos) {
+        finishSuccess(pos);
+      }, function(err) {
+        // 2. لو الـ GPS فشل، نجرب النت فوراً
+        console.log('GPS failed, falling back to Network...');
         var netOptions = { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 };
         
-        origGetCurrentPosition.call(navigator.geolocation, success, function(finalErr) {
-            // لو الاتنين فشلوا، بنرجع الإيرور الأصلي
-            error(finalErr);
+        origGetCurrentPosition.call(navigator.geolocation, function(netPos) {
+          finishSuccess(netPos);
+        }, function(netErr) {
+          // 3. لو الاتنين فشلوا، بنرجع رسالة الإيرور النهائية
+          finishError(netErr);
         }, netOptions);
         
       }, gpsOptions);
