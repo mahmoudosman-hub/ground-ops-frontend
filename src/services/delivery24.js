@@ -1,6 +1,5 @@
 /**
- * Ground OPS - Delivery 24 (Local Caching for Speed)
- * Intercepts API calls and caches static data in the device's localStorage.
+ * Ground OPS - Delivery 24 (Local Caching & Prefetching for Speed)
  */
 (function () {
   'use strict';
@@ -43,9 +42,8 @@
           var cachedStr = localStorage.getItem(cacheKey);
           if (cachedStr) {
             var cached = JSON.parse(cachedStr);
-            // لو الكاش لسه صالح
             if (Date.now() - cached.time < CACHE_TTL[action]) {
-              // بنرجع الرد المحفوظ فوراً (من غير ما نروح للسيرفر)
+              // نرجع الرد المحفوظ فوراً
               return Promise.resolve({
                 ok: true,
                 json: function() { return Promise.resolve(cached.data); }
@@ -53,7 +51,7 @@
             }
           }
 
-          // 3. لو مفيش كاش أو انتهت صلاحيته، بنجيب من السيرفر ونحفظه
+          // 3. لو مفيش كاش، بنجيب من السيرفر ونحفظه
           return origFetch(input, init).then(function (res) {
             var clonedRes = res.clone();
             clonedRes.json().then(function (data) {
@@ -72,41 +70,12 @@
       console.warn('Cache error:', e);
     }
     
-    // أي طلب تاني (زي تسجيل الدخول أو الإشعارات) يروح للسيرفر عادي
     return origFetch(input, init);
   };
-})();
-// ===== FIX: Ensure High-Accuracy Real GPS (No Network/Stale Location) =====
-(function() {
-  if (navigator.geolocation) {
-    var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
-    
-    navigator.geolocation.getCurrentPosition = function(success, error, options) {
-      // إعدادات قوية: نرفض أي لوكيشن قديم، ونطلب دقة عالية جداً
-      var robustOptions = Object.assign({}, options, {
-        enableHighAccuracy: true, // نجبره يستخدم GPS
-        maximumAge: 0,            // ممنوع ياخد لوكيشن محفوظ (حتى لو من ثانية)
-        timeout: 15000            // لو ملقاش إشارة في 15 ثانية، يرجع إيرور بدل ما يلف للأبد
-      });
 
-      // بننادي الدالة الأصلية بالإعدادات القوية دي
-      origGetCurrentPosition.call(navigator.geolocation, success, function(err) {
-        // لو حصل إيرور (زي إنه ملقاش إشارة)، بنقوله رسالة واضحة
-        if (err.code === 3) { // Timeout
-          alert('إشارة الـ GPS ضعيفة أو بطيئة. يرجى التأكد من فتح الـ Location والمحاولة مرة أخرى.');
-        }
-        if (error) error(err);
-      }, robustOptions);
-    };
-  }
-})();
-// ===== Background Prefetching for Instant Tabs =====
-(function () {
-  'use strict';
-  
+  // ===== Background Prefetching (التحميل المسبق في الخلفية) =====
   function prefetchData() {
     try {
-      // 1. نتأكد إن الكابتن مسجل دخول
       var sessRaw = localStorage.getItem('gops.session.employee');
       if (!sessRaw) return;
       var sess = JSON.parse(sessRaw);
@@ -117,38 +86,27 @@
 
       var headers = { 'Content-Type': 'text/plain;charset=utf-8' };
       
-      // 2. لو مفيش كاش للجدول، نجيبه في الخلفية
+      // جلب الجدول في الخلفية لو مش موجود
       if (!localStorage.getItem('gops.cache.getMySchedule')) {
-        fetch(apiUrl, { 
-          method: 'POST', headers: headers, 
-          body: JSON.stringify({ action: 'getMySchedule', token: sess.token, payload: {}, client: 'prefetch' }) 
-        }).catch(function(){});
+        fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getMySchedule', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
       }
       
-      // 3. لو مفيش كاش للريكويست، نجيبه في الخلفية
+      // جلب الريكويست في الخلفية لو مش موجود
       if (!localStorage.getItem('gops.cache.getMyRequests')) {
-        fetch(apiUrl, { 
-          method: 'POST', headers: headers, 
-          body: JSON.stringify({ action: 'getMyRequests', token: sess.token, payload: {}, client: 'prefetch' }) 
-        }).catch(function(){});
+        fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getMyRequests', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
       }
 
-      // 4. نحدث كاش "شيفت اليوم" في الخلفية (لأنه بيتمسح كل شوية)
-      fetch(apiUrl, { 
-        method: 'POST', headers: headers, 
-        body: JSON.stringify({ action: 'getTodaySchedule', token: sess.token, payload: {}, client: 'prefetch' }) 
-      }).catch(function(){});
+      // تحديث شيفت اليوم في الخلفية
+      fetch(apiUrl, { method: 'POST', headers: headers, body: JSON.stringify({ action: 'getTodaySchedule', token: sess.token, payload: {}, client: 'prefetch' }) }).catch(function(){});
 
     } catch (e) {}
   }
 
-  // نشغل التحميل المسبق بعد ما التطبيق يفتح بـ 3 ثواني عشان منزحمش التحميل الأساسي
   if (document.readyState === 'complete') {
     setTimeout(prefetchData, 3000);
   } else {
     window.addEventListener('load', function () { setTimeout(prefetchData, 3000); });
   }
+  setInterval(prefetchData, 4 * 60 * 1000); // كل 4 دقايق
 
-  // نعيد التحميل المسبق كل 4 دقايق عشان الكاش ميتعملهوش انتهاء صلاحية وإنت قافل التطبيق
-  setInterval(prefetchData, 4 * 60 * 1000);
 })();
