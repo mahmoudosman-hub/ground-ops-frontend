@@ -2,7 +2,6 @@
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
-// إعدادات مشروعك اللي أنت بعتها
 const firebaseConfig = {
   apiKey: "AIzaSyDwzrZIftyjwy_mukvWha4EhqDfBOV2UlY",
   authDomain: "ground-ops-tracker.firebaseapp.com",
@@ -16,7 +15,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// استقبال الإشعار والتطبيق في الخلفية
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   
@@ -25,9 +23,9 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification.body,
     icon: '/assets/icons/icon-192x192.png', 
     badge: '/assets/icons/icon-192x192.png',
-    vibrate: [200, 100, 200], // هزة للموبايل
-    requireInteraction: true, // الإشعار يفضل على الشاشة لحد ما يدوس عليه
-    data: { url: payload.data?.url || '/' } 
+    vibrate: [500, 200, 500, 200, 500, 200, 500, 200, 500], // هزة قوية (للأندرويد PWA)
+    requireInteraction: true, // الإشعار يفضل على الشاشة (مهم جداً للآيفون)
+    data: { url: payload.data?.url || '/?action=location_check' } 
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
@@ -46,7 +44,8 @@ self.addEventListener('notificationclick', (event) => {
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(event.notification.data.url || '/');
+        // بيفتح التطبيق على طول ويطلب منه يعمل Check GPS
+        return clients.openWindow(event.notification.data.url || '/?action=location_check');
       }
     })
   );
