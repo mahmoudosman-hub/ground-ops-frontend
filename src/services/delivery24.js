@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 24 (Local Caching, Prefetching & Fast GPS)
+ * Ground OPS - Delivery 24 (Local Caching, Prefetching & Smart Fallback GPS)
  */
 (function () {
   'use strict';
@@ -71,17 +71,31 @@
   else { window.addEventListener('load', function () { setTimeout(prefetchData, 3000); }); }
   setInterval(prefetchData, 4 * 60 * 1000);
 
-  // ===== 2. Fast GPS Override (Simple & Reliable) =====
+
+  // =====================================================================
+  // 2. Smart GPS with Fallback (تحديد الموقع بـ GPS أو بالنت كاحتياطي)
+  // =====================================================================
   if (navigator.geolocation) {
     var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
+    
     navigator.geolocation.getCurrentPosition = function(success, error, options) {
-      // بنجبره يستخدم الـ GPS، وممنوع ياخد لوكيشن قديم، والحد الأقصى للانتظار 8 ثواني
-      var robustOptions = Object.assign({}, options, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 8000 
-      });
-      origGetCurrentPosition.call(navigator.geolocation, success, error, robustOptions);
+      
+      // المحاولة الأولى: GPS (دقة عالية، 8 ثواني كحد أقصى)
+      var gpsOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 };
+      
+      origGetCurrentPosition.call(navigator.geolocation, success, function(err) {
+        // لو الـ GPS فشل (تايم أوت أو مفيش إشارة)، نعمل المحاولة التانية
+        console.log('GPS failed, falling back to network...');
+        
+        // المحاولة التانية: Network (دقة أقل، عشان الكابتن ميتعلقش)
+        var netOptions = { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 };
+        
+        origGetCurrentPosition.call(navigator.geolocation, success, function(finalErr) {
+            // لو الاتنين فشلوا، بنرجع الإيرور الأصلي
+            error(finalErr);
+        }, netOptions);
+        
+      }, gpsOptions);
     };
   }
 })();
