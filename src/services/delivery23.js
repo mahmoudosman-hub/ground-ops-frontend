@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 23 v2 (Manual Notification Button)
+ * Ground OPS - Delivery 23 v3 (Automatic + Manual Fallback)
  */
 (function () {
   'use strict';
@@ -17,25 +17,16 @@
 
   function getSession() {
     try {
-      var raw = localStorage.getItem('gops.session.employee');
+      var raw = localStorage.getItem('gops.session.employee') || sessionStorage.getItem('gops.session.employee');
       if (!raw) return null;
       var v = JSON.parse(raw);
       return (v && v.token) ? v : null;
     } catch (e) { return null; }
   }
 
-  async function requestNotificationPermission() {
+  async function registerToken() {
     try {
-      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-        alert('جهازك أو المتصفح لا يدعم الإشعارات.');
-        return;
-      }
-
-      var permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        alert('تم رفض الإشعارات. يرجى تفعيلها من إعدادات المتصفح/الموبايل.');
-        return;
-      }
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
 
       var { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js');
       var { getMessaging, getToken } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js');
@@ -43,14 +34,14 @@
       var app = initializeApp(firebaseConfig);
       var messaging = getMessaging(app);
 
-      // التعديل هنا: ضفنا نقطة قبل السلاش عشان يقرا من نفس الفولدر
+      // التعديل هنا: مسار صحيح للـ Service Worker
       var registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-      
       var currentToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
 
       if (currentToken) {
         var sess = getSession();
         var apiUrl = window.API_URL || window.GOPS_CONFIG?.API_URL || window.CONFIG?.API_URL;
+        
         if (apiUrl && sess) {
           await fetch(apiUrl, {
             method: 'POST',
@@ -59,30 +50,44 @@
               action: 'registerPushToken',
               token: sess.token,
               payload: { token: currentToken },
-              client: 'delivery23/2.0'
+              client: 'auto-register/1.0'
             })
           });
-          alert('✅ تم تفعيل الإشعارات بنجاح! سيتلقى التطبيق إشعارات السيلفي والتحديثات.');
+          console.log("✅ Token registered automatically for:", sess.token.substring(0, 10));
           var btn = document.getElementById('gops-enable-notif-btn');
           if (btn) btn.remove();
         }
       }
     } catch (err) {
       console.error('Push Error:', err);
-      alert('حدث خطأ أثناء تفعيل الإشعارات: ' + err.message);
     }
   }
 
-  function checkAndShowButton() {
+  async function requestNotificationPermission() {
+    try {
+      var permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        await registerToken();
+        alert('✅ تم تفعيل الإشعارات بنجاح!');
+      } else {
+        alert('تم رفض الإشعارات. يرجى تفعيلها من إعدادات المتصفح.');
+      }
+    } catch (err) {
+      alert('حدث خطأ: ' + err.message);
+    }
+  }
+
+  function checkAndRegister() {
     if (!getSession()) return;
     if (!('Notification' in window)) return;
     
+    // 1. لو الإذن متأكد منه خلاص، نسجل التوكن تلقائياً
     if (Notification.permission === 'granted') {
-      var existing = document.getElementById('gops-enable-notif-btn');
-      if (existing) existing.remove();
+      registerToken();
       return;
     }
 
+    // 2. لو الإذن مش متأكد منه (default)، نطلع الزرار
     if (document.getElementById('gops-enable-notif-btn')) return;
 
     var btn = document.createElement('button');
@@ -93,6 +98,7 @@
     document.body.appendChild(btn);
   }
 
-  setInterval(checkAndShowButton, 3000);
+  // تشغيل التلقائي كل 5 ثواني (عشان لو الكابتن لسه مسجل دخول)
+  setInterval(checkAndRegister, 5000);
 
 })();
