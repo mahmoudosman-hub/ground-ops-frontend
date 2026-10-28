@@ -117,9 +117,21 @@
     }
   }
 
-  function hideOldLangButton() {
+    function hideOldLangButton() {
+    // 1. نضيف قاعدة CSS بتخفي الزرار نهائياً ومهما حصل
+    if (!document.getElementById('gops-hide-old-lang-style')) {
+      var style = document.createElement('style');
+      style.id = 'gops-hide-old-lang-style';
+      style.innerHTML = '#gops-lang-btn { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }';
+      document.head.appendChild(style);
+    }
+    
+    // 2. نتأكد إن الزرار لو موجود متخفي فوراً
     var old = document.getElementById('gops-lang-btn');
-    if (old) { try { old.remove(); } catch (e) { old.style.display = 'none'; } }
+    if (old) {
+      old.style.setProperty('display', 'none', 'important');
+      old.style.setProperty('visibility', 'hidden', 'important');
+    }
   }
 
   function attachHints(root) {
