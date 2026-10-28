@@ -1,90 +1,88 @@
 /**
- * Ground OPS - Delivery 26 (Admin Notifications UI Fixer)
+ * Ground OPS - Delivery 26 (Admin Notifications UI Fixer - Aggressive)
  */
 (function () {
   'use strict';
   if (!/admin\.html/i.test(window.location.pathname)) return;
 
-  // 1. إضافة كود CSS لتحسين شكل الإشعارات
+  // 1. إضافة كود CSS قوي لتحسين شكل الإشعارات مهما كانت الكلاسات
   var style = document.createElement('style');
   style.innerHTML = `
-    /* تحديد طول القائمة وعمل سكرول لو كتير */
-    .gops-notif-container, div[class*="notification"]:has(> div) {
+    /* إجبار أي قائمة إشعارات تفتح إنها تكون ثابتة تحت الجرس */
+    .notifications-dropdown, .notification-list, [class*="notif-dropdown"], [class*="notification-menu"], div[style*="position: absolute"] > div {
+      position: fixed !important;
+      top: 60px !important; 
+      right: 20px !important;
+      width: 350px !important;
       max-height: 400px !important;
       overflow-y: auto !important;
+      background: #fff !important;
+      border: 1px solid #ddd !important;
       border-radius: 8px !important;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+      z-index: 99999 !important;
     }
+
     /* تنسيق شكل كل إشعار */
-    .gops-notif-item {
-      padding: 10px 14px !important;
+    .notifications-dropdown li, .notifications-dropdown div, .notification-item {
+      padding: 12px !important;
       border-bottom: 1px solid #eee !important;
-      transition: background 0.2s !important;
     }
-    .gops-notif-item:hover {
-      background: #f9f9f9 !important;
+    
+    .notifications-dropdown li:hover, .notifications-dropdown div:hover {
+      background-color: #f9f9f9 !important;
     }
-    .gops-notif-item.unread {
-      background: #f0f7ff !important;
-      border-left: 4px solid #0a84ff !important;
+
+    /* إخفاء الشارة الحمراء */
+    .badge, [class*="badge"], #notif-count {
+      display: none !important;
     }
   `;
   document.head.appendChild(style);
 
-  // دالة لمسح الشارة الحمراء (اللي فوق الجرس)
-  function clearBadge() {
-    var badge = document.querySelector('.badge, [class*="badge"], [id*="badge"]');
-    if (badge) {
-      badge.style.display = 'none';
-      badge.textContent = '0';
-    }
-    // لو فيه رقم جوه الجرس نفسه
-    var bell = document.querySelector('.fa-bell, [class*="bell"], [id*="bell"]');
-    if (bell) {
-      var countSpan = bell.querySelector('span');
-      if (countSpan) countSpan.style.display = 'none';
-    }
-  }
-
   // دالة لإغلاق القائمة
   function closePopup() {
-    var popup = document.querySelector('.notifications-popup, [class*="notification-popup"], #gops-notif-popup');
-    if (popup) popup.style.display = 'none';
+    var popups = document.querySelectorAll('.notifications-dropdown, .notification-list, [class*="notif-dropdown"], [class*="notification-menu"]');
+    popups.forEach(function(p) { p.style.display = 'none'; });
   }
 
-  // دالة لاعتراض زرار "قراءة الكل" وتحديث الشاشة فوراً
+  // دالة لمسح الإشعارات من الشاشة
+  function clearNotificationsUI() {
+    var lists = document.querySelectorAll('.notifications-dropdown, .notification-list');
+    lists.forEach(function(list) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">لا توجد إشعارات جديدة</div>';
+    });
+    closePopup();
+  }
+
+  // اعتراض الضغطات
   document.addEventListener('click', function (e) {
-    var target = e.target;
+    var text = e.target.innerText || "";
     
-    // لو داس على "قراءة الكل" (Mark all read)
-    if (target.textContent.includes('Mark all') || target.textContent.includes('قراءة الكل') || target.id === 'mark-all-read' || target.classList.contains('mark-all-read')) {
-      // بنستنى السيرفر يرد بـ نصف ثانية، وبعدين ننضف الشاشة
-      setTimeout(function () {
-        var items = document.querySelectorAll('.gops-notif-item, .notification-item');
-        items.forEach(function (item) { item.classList.remove('unread'); item.style.background = 'transparent'; });
-        clearBadge();
-        closePopup(); // نقفل القائمة عشان ميبقاش فيه لخبطة
-      }, 800);
+    // لو داس على "Mark all as read" أو "قراءة الكل"
+    if (text.includes('Mark all') || text.includes('قراءة الكل') || text.includes('قراءة الكل')) {
+      clearNotificationsUI();
+      
+      // إخفاء الشارة الحمراء فوق الجرس
+      var badge = document.querySelector('.badge, [class*="badge"], #notif-count');
+      if (badge) badge.style.display = 'none';
     }
 
-    // لو داس على الشارة أو الجرس لفتح القائمة
-    if (target.closest('.fa-bell') || target.closest('[class*="bell"]')) {
+    // لو داس على الجرس، نفتح القائمة ونطبق عليها الكلاس بتاعنا
+    if (e.target.closest('.fa-bell') || e.target.closest('[class*="bell"]')) {
       setTimeout(function () {
-        var popup = document.querySelector('.notifications-popup, [class*="notification-popup"]');
-        if (popup) {
-          popup.classList.add('gops-notif-container');
-        }
-      }, 200);
+        var popups = document.querySelectorAll('.notifications-dropdown, .notification-list, [class*="notif-dropdown"], [class*="notification-menu"]');
+        popups.forEach(function(p) {
+            p.classList.add('notifications-dropdown'); // بنجبر الكلاس يتطبق
+        });
+      }, 100);
     }
   });
 
-  // قفل القائمة لما تدوس في أي مكان فاضي بره
+  // قفل القائمة لو داس في أي مكان فاضي
   document.addEventListener('mousedown', function (e) {
-    var popup = document.querySelector('.notifications-popup, [class*="notification-popup"]');
-    if (popup && popup.style.display !== 'none') {
-      if (!popup.contains(e.target) && !e.target.closest('.fa-bell') && !e.target.closest('[class*="bell"]')) {
-        closePopup();
-      }
+    if (!e.target.closest('.fa-bell') && !e.target.closest('[class*="bell"]') && !e.target.closest('.notifications-dropdown')) {
+      closePopup();
     }
   });
 
