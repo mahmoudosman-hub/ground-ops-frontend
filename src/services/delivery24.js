@@ -110,3 +110,69 @@
   setInterval(prefetchData, 4 * 60 * 1000); // كل 4 دقايق
 
 })();
+// ===== FIX: GPS Smoothing (Averaging multiple points) =====
+(function() {
+  if (!navigator.geolocation) return;
+  
+  var origGetCurrentPosition = navigator.geolocation.getCurrentPosition;
+  
+  navigator.geolocation.getCurrentPosition = function(success, error, options) {
+    var robustOptions = Object.assign({}, options, {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 15000
+    });
+
+    var readings = [];
+    var watchId = null;
+    
+    // بنجمع قراءات لمدة 4 ثواني
+    watchId = navigator.geolocation.watchPosition(
+      function(pos) {
+        // بنرفض أي قراءة دقتها وحشة (أكبر من 50 متر) عشان منضللهاش
+        if (pos.coords.accuracy <= 50) {
+          readings.push(pos);
+        }
+      },
+      function(err) {
+        // لو حصل إيرور في الـ watch، بنطنش ونستنى
+      },
+      robustOptions
+    );
+
+    // بعد 4 ثواني، بنوقف السحب ونحسب المتوسط
+    setTimeout(function() {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+
+      if (readings.length === 0) {
+        // لو ملقاش قراءات كويسة خالص، بنرجع للطريقة القديمة
+        origGetCurrentPosition.call(navigator.geolocation, success, error, robustOptions);
+        return;
+      }
+
+      // بنرتب القراءات من الأدق للأقل دقة، وناخد أفضل 3 قراءات
+      readings.sort(function(a, b) { return a.coords.accuracy - b.coords.accuracy; });
+      var best = readings.slice(0, 3);
+      
+      var sumLat = 0, sumLng = 0, sumAcc = 0;
+      for (var i = 0; i < best.length; i++) {
+        sumLat += best[i].coords.latitude;
+        sumLng += best[i].coords.longitude;
+        sumAcc += best[i].coords.accuracy;
+      }
+      
+      // بنبعت المتوسط
+      success({
+        coords: {
+          latitude: sumLat / best.length,
+          longitude: sumLng / best.length,
+          accuracy: sumAcc / best.length,
+          altitude: best[0].coords.altitude,
+          heading: best[0].coords.heading,
+          speed: best[0].coords.speed
+        },
+        timestamp: Date.now()
+      });
+    }, 4000); // 4 ثواني كافية جداً
+  };
+})();
