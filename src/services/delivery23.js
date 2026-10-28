@@ -113,7 +113,7 @@
     window.addEventListener('load', initPushNotifications);
   }
 })();
-  // ===== iOS 30-Minute Location Check Handling =====
+  // ===== iOS 15-Minute Location Check Handling =====
   window.addEventListener('load', function () {
     var urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') === 'location_check') {
