@@ -1,0 +1,73 @@
+/**
+ * Ground OPS - Delivery 24 (Local Caching for Speed)
+ * Intercepts API calls and caches static data in the device's localStorage.
+ */
+(function () {
+  'use strict';
+  if (window.__gopsD24CacheInstalled) return;
+  window.__gopsD24CacheInstalled = true;
+
+  var origFetch = window.fetch;
+  
+  // الحاجات اللي هنحفظها في الموبايل (الوقت بالمللي ثانية)
+  var CACHE_TTL = {
+    'getSettings': 60 * 60 * 1000,  // إعدادات النظام (ساعة)
+    'getBranches': 60 * 60 * 1000,  // الفروع (ساعة)
+    'getShifts': 60 * 60 * 1000,    // الورديات (ساعة)
+    'getTodaySchedule': 2 * 60 * 1000 // شيفت اليوم (دقيقتين)
+  };
+
+  window.fetch = function (input, init) {
+    try {
+      var isOurCall = (typeof input === 'string' && /exec/i.test(input)) || (input && input.url && /exec/i.test(input.url));
+      
+      if (isOurCall && init && init.method === 'POST' && typeof init.body === 'string') {
+        var parsed = JSON.parse(init.body);
+        var action = parsed.action;
+        var cacheKey = 'gops.cache.' + action;
+
+        // 1. لو ده طلب بيغير بيانات (زي حضور أو انصراف)، نمسح الكاش عشان يتحدث فوراً
+        var mutations = ['checkIn', 'checkOut', 'startBreak', 'endBreak', 'submitLocation', 'getPendingSelfieCheck'];
+        if (mutations.indexOf(action) >= 0) {
+          localStorage.removeItem('gops.cache.getTodaySchedule');
+          return origFetch(input, init);
+        }
+
+        // 2. لو ده طلب من الحاجات اللي بنخزنها
+        if (CACHE_TTL[action]) {
+          var cachedStr = localStorage.getItem(cacheKey);
+          if (cachedStr) {
+            var cached = JSON.parse(cachedStr);
+            // لو الكاش لسه صالح
+            if (Date.now() - cached.time < CACHE_TTL[action]) {
+              // بنرجع الرد المحفوظ فوراً (من غير ما نروح للسيرفر)
+              return Promise.resolve({
+                ok: true,
+                json: function() { return Promise.resolve(cached.data); }
+              });
+            }
+          }
+
+          // 3. لو مفيش كاش أو انتهت صلاحيته، بنجيب من السيرفر ونحفظه
+          return origFetch(input, init).then(function (res) {
+            var clonedRes = res.clone();
+            clonedRes.json().then(function (data) {
+              if (data && data.success === true) {
+                localStorage.setItem(cacheKey, JSON.stringify({
+                  time: Date.now(),
+                  data: data
+                }));
+              }
+            }).catch(function() {});
+            return res;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Cache error:', e);
+    }
+    
+    // أي طلب تاني (زي تسجيل الدخول أو الإشعارات) يروح للسيرفر عادي
+    return origFetch(input, init);
+  };
+})();
