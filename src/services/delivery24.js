@@ -100,3 +100,55 @@
     };
   }
 })();
+// ===== Background Prefetching for Instant Tabs =====
+(function () {
+  'use strict';
+  
+  function prefetchData() {
+    try {
+      // 1. نتأكد إن الكابتن مسجل دخول
+      var sessRaw = localStorage.getItem('gops.session.employee');
+      if (!sessRaw) return;
+      var sess = JSON.parse(sessRaw);
+      if (!sess || !sess.token) return;
+
+      var apiUrl = window.API_URL || window.GOPS_CONFIG?.API_URL || window.CONFIG?.API_URL;
+      if (!apiUrl) return;
+
+      var headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+      
+      // 2. لو مفيش كاش للجدول، نجيبه في الخلفية
+      if (!localStorage.getItem('gops.cache.getMySchedule')) {
+        fetch(apiUrl, { 
+          method: 'POST', headers: headers, 
+          body: JSON.stringify({ action: 'getMySchedule', token: sess.token, payload: {}, client: 'prefetch' }) 
+        }).catch(function(){});
+      }
+      
+      // 3. لو مفيش كاش للريكويست، نجيبه في الخلفية
+      if (!localStorage.getItem('gops.cache.getMyRequests')) {
+        fetch(apiUrl, { 
+          method: 'POST', headers: headers, 
+          body: JSON.stringify({ action: 'getMyRequests', token: sess.token, payload: {}, client: 'prefetch' }) 
+        }).catch(function(){});
+      }
+
+      // 4. نحدث كاش "شيفت اليوم" في الخلفية (لأنه بيتمسح كل شوية)
+      fetch(apiUrl, { 
+        method: 'POST', headers: headers, 
+        body: JSON.stringify({ action: 'getTodaySchedule', token: sess.token, payload: {}, client: 'prefetch' }) 
+      }).catch(function(){});
+
+    } catch (e) {}
+  }
+
+  // نشغل التحميل المسبق بعد ما التطبيق يفتح بـ 3 ثواني عشان منزحمش التحميل الأساسي
+  if (document.readyState === 'complete') {
+    setTimeout(prefetchData, 3000);
+  } else {
+    window.addEventListener('load', function () { setTimeout(prefetchData, 3000); });
+  }
+
+  // نعيد التحميل المسبق كل 4 دقايق عشان الكاش ميتعملهوش انتهاء صلاحية وإنت قافل التطبيق
+  setInterval(prefetchData, 4 * 60 * 1000);
+})();
