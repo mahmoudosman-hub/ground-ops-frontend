@@ -113,3 +113,27 @@
     window.addEventListener('load', initPushNotifications);
   }
 })();
+  // ===== iOS 30-Minute Location Check Handling =====
+  window.addEventListener('load', function () {
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'location_check') {
+      // هننضف الرابط عشان لو عمل ريفريش ميفضلش يطلب منه كل شوية
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // نستنى ثانية عشان التطبيق يحمل
+      setTimeout(function () {
+        if (window.Alert && window.Alert.alert) {
+           // لو التطبيق فيه دالة تنبيه
+        } else {
+           alert('يرجى الضغط على زر "Check GPS" لتأكيد موقعك الحالي.');
+        }
+        
+        // ممكن نعمل سكرول لزرار الـ GPS أو نعمل فلاش عليه
+        var gpsBtn = document.getElementById('gops-btn-check-gps') || document.querySelector('[data-action="checkGps"]');
+        if (gpsBtn) {
+          gpsBtn.style.boxShadow = '0 0 15px 5px #ffeb3b';
+          gpsBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 1500);
+    }
+  });
