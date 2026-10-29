@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 29 (Final Fix)
+ * Ground OPS - Delivery 29 (Final Fix - Hide Old Lang Button)
  */
 (function () {
   'use strict';
@@ -9,13 +9,7 @@
   function fixFab() {
     var fab = document.getElementById('gops-sc-fab');
     if (!fab) return;
-
-    // مسح أي كلام جواه
-    if (fab.innerHTML.trim() !== '📸') {
-      fab.innerHTML = '📸';
-    }
-
-    // إجبار التصميم يبقى دايرة صغيرة
+    if (fab.innerHTML.trim() !== '📸') fab.innerHTML = '📸';
     fab.style.setProperty('width', '55px', 'important');
     fab.style.setProperty('height', '55px', 'important');
     fab.style.setProperty('border-radius', '50%', 'important');
@@ -28,31 +22,32 @@
     fab.style.setProperty('right', '20px', 'important');
   }
 
-  // نشغلها كل ثانية عشان نضمن إنها مسيطرة على الكود القديم
-  setInterval(fixFab, 1000);
+  // 2. إخفاء الزرار القديم بتاع اللغة (اللي جاي من delivery3b)
+  function hideOldLang() {
+    var oldBtn = document.getElementById('gops-lang-btn');
+    if (oldBtn) {
+      oldBtn.style.display = 'none';
+    }
+  }
 
-  // 2. قفل قائمة الإشعارات فوراً عند الضغط على "قراءة الكل"
+  // نشغل التنظيف كل ثانية عشان نضمن إننا مسيطرين
+  setInterval(function() {
+    fixFab();
+    hideOldLang();
+  }, 1000);
+
+  // 3. قفل الإشعارات لوحده
   document.addEventListener('click', function (e) {
     var text = (e.target.innerText || "").toLowerCase();
-    
-    if (text.includes('mark all') || text.includes('قراءة الكل') || text.includes('mark as read')) {
-      
+    if (text.includes('mark all') || text.includes('قراءة الكل')) {
       setTimeout(function () {
-        // إخفاء أي قائمة إشعارات مفتوحة
         var dropdowns = document.querySelectorAll('[class*="dropdown"], [class*="notification"]');
-        dropdowns.forEach(function (d) {
-          if (d.style.display !== 'none') d.style.display = 'none';
-        });
-
-        // إزالة أي شاشة سوداء (Backdrop) سببها الكود القديم
+        dropdowns.forEach(function (d) { d.style.display = 'none'; });
         var backdrops = document.querySelectorAll('.modal-backdrop');
         backdrops.forEach(function (b) { b.remove(); });
-
-        // التأكد إن الشاشة رجعت طبيعية ومفيش سواد
         document.body.style.backgroundColor = '';
         document.body.style.overflow = 'auto';
-        
-      }, 400); // نصف ثانية
+      }, 500);
     }
   });
 
