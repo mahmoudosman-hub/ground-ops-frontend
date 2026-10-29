@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 29 (Fix Lang Button + Arabic Hints)
+ * Ground OPS - Delivery 29 (Final Fix - Hide Old Lang Button + Arabic Hints)
  */
 (function () {
   'use strict';
@@ -88,12 +88,11 @@
     if (lang === 'ar') translateSettingDescriptions();
     else restoreSettingDescriptions();
     
-    // لو الزرار الجديد بيتحكم في اللغة، إحنا بنستنى التغيير ده
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }
 
-  // مراقبة التغييرات في الصفحة عشان نطبق الترجمة لو الأدمن غير اللغة
+  // مراقبة التغييرات في الصفحة
   var pending = false;
   var obs = new MutationObserver(function () {
     if (pending) return;
@@ -112,6 +111,21 @@
     fixFab();
     hideOldLang();
     applyAll();
+  });
+
+  // قفل الإشعارات لوحده
+  document.addEventListener('click', function (e) {
+    var text = (e.target.innerText || "").toLowerCase();
+    if (text.includes('mark all') || text.includes('قراءة الكل')) {
+      setTimeout(function () {
+        var dropdowns = document.querySelectorAll('[class*="dropdown"], [class*="notification"]');
+        dropdowns.forEach(function (d) { d.style.display = 'none'; });
+        var backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(function (b) { b.remove(); });
+        document.body.style.backgroundColor = '';
+        document.body.style.overflow = 'auto';
+      }, 500);
+    }
   });
 
 })();
