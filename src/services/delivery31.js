@@ -1,11 +1,20 @@
 /**
- * Ground OPS - Delivery 31 v2 (Admin Custom Notifications UI - Bulk)
+ * Ground OPS - Delivery 31 v3 (Fixed Employee List)
  */
 (function () {
   'use strict';
   if (!/admin\.html/i.test(window.location.pathname)) return;
 
-  // إضافة زرار في القائمة الجانبية
+  // دالة بتجيب التوكن من أي مكان
+  function getSession() {
+    try {
+      var raw = localStorage.getItem('gops.session.admin') || sessionStorage.getItem('gops.session.admin');
+      if (!raw) return null;
+      var v = JSON.parse(raw);
+      return (v && v.token) ? v : null;
+    } catch (e) { return null; }
+  }
+
   function injectSidebarButton() {
     var nav = document.querySelector('.sidebar, nav.sidebar, aside.sidebar, #sidebar');
     if (!nav || document.getElementById('gops-admin-notif-btn')) return;
@@ -23,9 +32,18 @@
     var old = document.getElementById('gops-notif-modal');
     if (old) old.remove();
 
-    var token = localStorage.getItem('gops.session.admin');
-    if (token) { try { token = JSON.parse(token).token; } catch(e){} }
+    var sess = getSession();
+    if (!sess) { alert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى.'); return; }
+    
+    var token = sess.token;
     var apiUrl = window.API_URL || window.GOPS_CONFIG?.API_URL || window.CONFIG?.API_URL;
+
+    // شاشة تحميل مؤقتة لحد ما نلاقي الموظفين
+    var modal = document.createElement('div');
+    modal.id = 'gops-notif-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = '<div style="color:#fff;font:16px system-ui;">جاري جلب القائمة...</div>';
+    document.body.appendChild(modal);
 
     // جلب الموظفين والفروع
     var p1 = fetch(apiUrl, {
@@ -39,16 +57,20 @@
     }).then(function(r) { return r.json(); });
 
     Promise.all([p1, p2]).then(function(results) {
-      var emps = (results[0].success && results[0].data.items) ? results[0].data.items : [];
-      var branches = (results[1].success && results[1].data.branches) ? results[1].data.branches : [];
-      
-      var empOpts = emps.map(function(e) { return '<option value="' + e.employee_id + '">' + e.employee_name + ' (' + e.employee_id + ')</option>'; }).join('');
-      var branchOpts = branches.map(function(b) { return '<option value="' + b.branch_id + '">' + b.branch_name + '</option>'; }).join('');
+      var emps = [];
+      var branches = [];
 
-      var modal = document.createElement('div');
-      modal.id = 'gops-notif-modal';
-      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      // لو السيرفر رجع أسماء
+      if (results[0] && results[0].success && results[0].data && results[0].data.items) {
+        emps = results[0].data.items;
+      }
+      if (results[1] && results[1].success && results[1].data && results[1].data.branches) {
+        branches = results[1].data.branches;
+      }
       
+      var empOpts = '<option value="">-- اختر الكابتن --</option>' + emps.map(function(e) { return '<option value="' + e.employee_id + '">' + e.employee_name + ' (' + e.employee_id + ')</option>'; }).join('');
+      var branchOpts = '<option value="">-- اختر الفرع --</option>' + branches.map(function(b) { return '<option value="' + b.branch_id + '">' + b.branch_name + '</option>'; }).join('');
+
       modal.innerHTML = 
         '<div style="background:#fff;border-radius:12px;max-width:500px;width:100%;padding:20px;font:15px/1.5 system-ui,sans-serif;color:#111;">' +
           '<h2 style="margin:0 0 15px;">📢 إرسال إشعار مخصص</h2>' +
@@ -94,8 +116,6 @@
           '<div id="gops-notif-err" style="color:#c00;margin-top:10px;text-align:center;"></div>' +
         '</div>';
       
-      document.body.appendChild(modal);
-
       var targetSel = document.getElementById('gops-notif-target');
       var branchWrap = document.getElementById('gops-notif-branch-wrap');
       var empWrap = document.getElementById('gops-notif-emp-wrap');
@@ -106,13 +126,11 @@
       var errDiv = document.getElementById('gops-notif-err');
       var sendBtn = document.getElementById('gops-notif-send');
 
-      // إظهار/إخفاء القوائم بناءً على المرسل إليه
       targetSel.onchange = function() {
         branchWrap.style.display = (targetSel.value === 'BRANCH') ? 'block' : 'none';
         empWrap.style.display = (targetSel.value === 'EMPLOYEE') ? 'block' : 'none';
       };
 
-      // تعبئة تلقائية للحقول بناءً على النوع
       typeSel.onchange = function() {
         var v = typeSel.value;
         if (v === 'update') { titleIn.value = 'تحديث جديد للتطبيق'; bodyIn.value = 'يرجى تحديث التطبيق الآن للحصول على آخر الميزات.'; urlIn.value = 'https://mahmoudosman-hub.github.io/ground-ops-frontend/index.html'; }
@@ -164,7 +182,12 @@
         });
       };
     }).catch(function(e) {
-      alert('فشل جلب البيانات: ' + e.message);
+      modal.innerHTML = '<div style="background:#fff;padding:20px;border-radius:12px;text-align:center;">' +
+        '<div style="color:#c00;font-weight:bold;margin-bottom:10px;">فشل جلب القائمة</div>' +
+        '<div style="font-size:13px;color:#666;margin-bottom:15px;">' + e.message + '</div>' +
+        '<button id="gops-notif-err-close" style="padding:10px 20px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;">إغلاق</button>' +
+        '</div>';
+      document.getElementById('gops-notif-err-close').onclick = function() { modal.remove(); };
     });
   }
 
