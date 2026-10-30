@@ -12,6 +12,8 @@ registerLang('ar', {
   'Removed from Google Maps watchlist': 'اتشال من قائمة خرائط جوجل', 'Marked as sharing on Google Maps': 'اتسجل كمشارك على خرائط جوجل',
   'Name': 'الاسم', 'Actions': 'إجراءات', 'Google Maps': 'خرائط جوجل',
   'Updates every minute. Green = fresh (20 min), orange = getting old (45 min), red = no location.': 'بتتحدث كل دقيقة. أخضر = موقع حديث (٢٠ دقيقة)، برتقالي = بدأ يقصر، أحمر = مفيش موقع.',
-  'No captains found. They appear here after their first check-in.': 'مفيش كباتن — هيظهروا أول ما يعملوا تسجيل حضور.',
+  'No captains on duty right now. Tick "Show off-duty too" above to see everyone.': 'مفيش حد شغال في الشيفت دلوقتي. لو عايز تشوف الكل، علّم من فوق على «إظهار اللي خارج الشيفت كمان».',
+  'Show off-duty too': 'إظهار اللي خارج الشيفت كمان',
+  'Captains on duty now: {n} of {total}': 'شغالين في الشيفت دلوقتي: {n} من أصل {total}',
   'Live map of captains on duty (iPhone PWA + Android). The system pings captains whose location is stale every 15 minutes; the counter shows pings without a reply.': 'خريطة حية للكباتن الشغالين (آيفون + أندرويد). النظام بيتبع أي كابتن موقعه قديم كل ١٥ دقيقة، والعدّاد بيوضح مين ما ردّش.'
 }, true);

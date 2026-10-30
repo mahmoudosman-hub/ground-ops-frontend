@@ -51,10 +51,14 @@ export async function liveMapPage(ctx) {
   }
 
   let lpRef = null;
+  let showAll = false; // الافتراضي: الشغالين في الشيفت بس — الصحاب خارج الشيفت مخفيين
   const lp = lpRef = listPage({
     auto: 60000,
     toolbar: [
       button(t('Refresh'), { id: 'btn-map-refresh', kind: 'primary', on: { click: () => lpRef.reload() } }),
+      h('label', { class: 'hint', style: 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap' },
+        h('input', { type: 'checkbox', id: 'chk-show-all', on: { change: (e) => { showAll = e.target.checked; lpRef.reload(); } } }),
+        t('Show off-duty too')),
       h('span', { class: 'hint' }, t('Updates every minute. Green = fresh (20 min), orange = getting old (45 min), red = no location.'))
     ],
     columns: [
@@ -66,12 +70,15 @@ export async function liveMapPage(ctx) {
       { key: 'gmaps_shared', label: 'Google Maps', render: (r) => button(r.gmaps_shared ? t('Watching') : t('Watch'), { small: true, class: r.gmaps_shared ? 'x' : '', on: { click: () => toggleGmaps(r) } }) },
       { key: 'actions', label: 'Actions', render: (r) => h('span', { class: 'btn-row' }, button(t('Ping now'), { small: true, kind: 'primary', on: { click: () => pingNow(r) } })) }
     ],
-    empty: t('No captains found. They appear here after their first check-in.'),
+    empty: t('No captains on duty right now. Tick "Show off-duty too" above to see everyone.'),
     async load() {
       const res = await ctx.api.call('getLiveMap', {});
       const items = (res && res.items) || [];
-      drawMap(items);
-      return { items: items };
+      const onDuty = items.filter((r) => r.shift_active);
+      const rows = showAll ? items : onDuty; // بدون العلم: الشغالين في الشيفت بس
+      drawMap(rows);
+      const before = h('p', { class: 'hint' }, t('Captains on duty now: {n} of {total}', { n: String(onDuty.length), total: String(items.length) }));
+      return { items: rows, before };
     }
   });
 
