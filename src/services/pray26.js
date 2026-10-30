@@ -1,12 +1,13 @@
 /**
- * Ground OPS - Delivery 26: زر الصلاة (Pray Break) — d48
- * زر عائم للكابتن أثناء الشيفت: 15 دقيقة سكوت تام من كل الإشعارات، بتقفل لوحدها.
+ * Ground OPS - Delivery 26: زر الصلاة (Pray Break) — d51
+ * زر بريك الصلاة للكابتن: 15 دقيقة سكوت تام من كل الإشعارات، بتقفل لوحدها.
  * - يظهر فقط للكابتن المسجل الدخول.
  * - العد بالثواني على الزر، وينتهي تلقائياً من السيرفر.
  * - لو الكابتن عمل Check-Out، الصلاة بتتقفل تلقائياً من السيرفر.
- * d48: مفيش أي رسائل منبثقة (confirm/alert) — كل التأكيدات والرسائل بتظهر
- *      على الزر نفسه في نفس المكان (الموبايل: اللافتة اللي فوق كانت مش بتتشاف).
- *      التشغيل بضغطتين: ضغطة أولى = الزر يسأل "متأكد؟"، ضغطة تانية = تنفيذ.
+ * d48: مفيش أي رسائل منبثقة (confirm/alert) — كل التأكيدات بتظهر على الزر نفسه.
+ *      التشغيل بضغطتين: ضغطة أولى = الزر يسأل «متأكد؟»، ضغطة تانية = تنفيذ.
+ * d51: الزر اتنقل من مكانه العائم تحت على اليمين إلى شريط التابات فوق،
+ *      جنب تاب «الطلبات» مباشرة — بنفس منطق الشغل القديم بالظبط.
  */
 (function () {
   'use strict';
@@ -43,25 +44,30 @@
     return out.data;
   }
 
+  // d51: الزر بيتحط جوه شريط التابات (#tabs) بعد تاب «الطلبات» مباشرة — مش عائم تحت
   function ensureBtn() {
     var b = document.getElementById('gops-pray-btn');
-    if (b) return b;
-    b = document.createElement('button');
-    b.id = 'gops-pray-btn';
-    b.type = 'button';
-    b.setAttribute('aria-label', 'بريك الصلاة');
+    if (b && b.isConnected) return b;
+    var tabs = document.getElementById('tabs');
+    if (!tabs) return null; // مش مسجل دخول — مفيش شريط تابات
+    if (!b) {
+      b = document.createElement('button');
+      b.id = 'gops-pray-btn';
+      b.type = 'button';
+      b.setAttribute('aria-label', 'بريك الصلاة');
+      b.addEventListener('click', onTap);
+    }
+    b.className = 'btn btn-small';
     b.style.cssText = [
-      'position:fixed', 'z-index:99990', 'right:14px', 'bottom:92px',
-      'direction:rtl', 'font-family:inherit', 'font-size:14px', 'font-weight:700',
-      'color:#fff', 'background:#0e7a5f', 'border:none', 'border-radius:999px',
-      'padding:10px 16px', 'box-shadow:0 4px 14px rgba(0,0,0,.28)',
-      'display:none', 'align-items:center', 'gap:6px', 'cursor:pointer',
-      'text-align:center', 'line-height:1.3', 'max-width:78vw',
-      '-webkit-tap-highlight-color:transparent', 'transition:background .2s'
+      'direction:rtl', 'font-family:inherit', 'font-weight:700', 'color:#fff',
+      'background:#0e7a5f', 'border:none', 'border-radius:999px',
+      'padding:4px 12px', 'white-space:nowrap', '-webkit-tap-highlight-color:transparent',
+      'transition:background .2s'
     ].join(';');
-    b.innerHTML = '<span id="gops-pray-ic">🕌</span><span id="gops-pray-tx">بريك الصلاة</span>';
-    b.addEventListener('click', onTap);
-    document.body.appendChild(b);
+    b.innerHTML = '<span id="gops-pray-ic">🕌</span> <span id="gops-pray-tx">بريك الصلاة</span>';
+    var req = document.getElementById('tab-requests');
+    if (req && req.parentNode === tabs) req.insertAdjacentElement('afterend', b);
+    else tabs.appendChild(b);
     return b;
   }
 
@@ -70,17 +76,17 @@
     return m + ':' + (s < 10 ? '0' : '') + s;
   }
 
-  // نص الزر وقت الصلاة: اسم الإجراء (إيقاف بريك الصلاة) + الوقت المتبقي
+  // نص الزر وقت الصلاة: الإيقاف + الوقت المتبقي (مختصر عشان يتسع في شريط التابات)
   function prayLabel() {
-    return 'إيقاف بريك الصلاة' +
-      '<br><small style="font-size:11px;font-weight:400;opacity:.95">باقي ' + fmt(remainSec) + '</small>';
+    return 'إيقاف 🤲 ' + fmt(remainSec);
   }
 
   function setFace(icon, html, bg, pulse) {
     var b = ensureBtn();
+    if (!b) return;
     var tx = document.getElementById('gops-pray-tx');
     var ic = document.getElementById('gops-pray-ic');
-    if (tx) tx.innerHTML = html;
+    if (tx) tx.textContent = html;
     if (ic) ic.textContent = icon;
     b.style.background = bg;
     b.style.animation = pulse ? 'gopsPrayPulse 2s infinite' : '';
@@ -109,7 +115,7 @@
       setFace('🤲', prayLabel(), '#8a5a00', true);
       startCountdown();
     } else {
-      setFace('🕌', 'بريك الصلاة<br><small style="font-size:11px;font-weight:400;opacity:.95">دوس هنا لبدء 15 دقيقة</small>', '#0e7a5f', false);
+      setFace('🕌', 'بريك الصلاة', '#0e7a5f', false);
       stopCountdown();
     }
   }
@@ -121,7 +127,7 @@
         remainSec--;
         if (mode === 'praying') {
           var tx = document.getElementById('gops-pray-tx');
-          if (tx) tx.innerHTML = prayLabel();
+          if (tx) tx.textContent = prayLabel();
         }
       }
       if (remainSec <= 0) {
@@ -132,12 +138,12 @@
   }
   function stopCountdown() { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } }
 
-  // رسالة "اتقفل البريك" على الزر نفسه — في نفس المكان، مفيش لافتة في مكان تاني
+  // رسالة «اتقفل البريك» على الزر نفسه — في نفس المكان
   var flashing = false;
   function flashEnd() {
     flashing = true;
     mode = 'flash';
-    setFace('🕌', 'اتقفل البريك ✅', '#1b8a3a', false);
+    setFace('🕌', 'تم ✅', '#1b8a3a', false);
     setTimeout(function () {
       flashing = false;
       mode = 'idle';
@@ -145,7 +151,7 @@
     }, 2500);
   }
 
-  // رسالة خطأ على الزر نفسه — بدل alert اللي كان بيطلع فوق
+  // رسالة خطأ على الزر نفسه — بدل alert المنبثق
   function flashError(msg) {
     mode = 'error';
     setFace('⚠️', msg, '#b3261e', false);
@@ -156,7 +162,7 @@
   }
 
   async function onTap() {
-    if (flashing) return; // أثناء رسالة "اتقفل البريك" نتجاهل الضغط
+    if (flashing) return; // أثناء رسالة «تم» نتجاهل الضغط
     var praying = remainSec > 0;
     try {
       if (mode === 'confirm-start') {
@@ -175,22 +181,16 @@
         stopCountdown();
         flashEnd();
       } else if (!praying) {
-        // ضغطة أولى: بدل اللافتة المنبثقة — الزر نفسه بيسأل "متأكد؟"
-        transient('confirm-start', '⚠️',
-          'متأكد؟ دوس تاني يبدأ' +
-          '<br><small style="font-size:11px;font-weight:400;opacity:.95">بريك صلاة 15 دقيقة — الإشعارات هتسكت</small>',
-          '#b45309', 6000, false);
+        // ضغطة أولى: الزر نفسه بيسأل «متأكد؟»
+        transient('confirm-start', '⚠️', 'متأكد؟ دوس تاني', '#b45309', 6000, false);
       } else {
         // ضغطة أولى والصلاة شغالة: تأكيد القفل على الزر نفسه
-        transient('confirm-end', '⚠️',
-          'متأكد من إيقاف البريك؟' +
-          '<br><small style="font-size:11px;font-weight:400;opacity:.95">دوس تاني يقفل دلوقتي — باقي ' + fmt(remainSec) + '</small>',
-          '#b3261e', 5000, false);
+        transient('confirm-end', '⚠️', 'متأكد من الإيقاف؟', '#b3261e', 5000, false);
       }
     } catch (e) {
       var msg = (e && e.message) || '';
       clearTransient();
-      if (msg.indexOf('checked in') >= 0) flashError('لازم تعمل Check In الأول');
+      if (msg.indexOf('checked in') >= 0) flashError('لازم Check In الأول');
       else flashError('حصلت مشكلة — حاول تاني');
     }
   }
@@ -198,14 +198,17 @@
   async function refresh() {
     var sess = getSession();
     var b = ensureBtn();
-    if (!sess || !API_URL) { b.style.display = 'none'; stopCountdown(); return; }
-    b.style.display = 'flex';
+    if (!b || !sess || !API_URL) {
+      if (b && (!sess || !API_URL)) b.remove(); // خروج من الحساب → الزر يختفي
+      stopCountdown();
+      return;
+    }
     try {
       var st = await api('prayStatus', {});
       remainSec = st.praying ? (st.remaining_seconds || 0) : 0;
       paint(!!st.praying);
     } catch (e) {
-      // سيشن بايظة أو نت أوفلاين — نخلي الزر هادي بحالة "صلاة" العادية
+      // سيشن بايظة أو نت أوفلاين — نخلي الزر هادي بحالة «صلاة» العادية
       if (remainSec <= 0 && mode === 'idle') paint(false);
     }
   }
@@ -214,9 +217,20 @@
   style.textContent = '@keyframes gopsPrayPulse{0%{box-shadow:0 0 0 0 rgba(138,90,0,.55)}70%{box-shadow:0 0 0 14px rgba(138,90,0,0)}100%{box-shadow:0 0 0 0 rgba(138,90,0,0)}}';
   document.head.appendChild(style);
 
+  // أول ما شريط التابات يظهر (تسجيل دخول جديد مثلاً) نحط الزر فوراً من غير ما نستنى الدورة
+  var mo = null;
+  function watchTabs() {
+    if (mo || !('MutationObserver' in window)) return;
+    mo = new MutationObserver(function () {
+      if (document.getElementById('tabs') && !document.getElementById('gops-pray-btn')) refresh();
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
   function boot() {
     ensureBtn();
     refresh();
+    watchTabs();
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(refresh, 30000);
   }
