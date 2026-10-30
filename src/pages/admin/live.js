@@ -3,7 +3,7 @@ import { t } from '../../core/i18n.js';
 import { fmtTime, agoText, todayLocal } from '../../core/time.js';
 import { badge, button, listPage, errorBox, confirmDialog, toast, toastError } from '../../components/ui.js';
 import { createMap, drawBranches, drawPoint, fit } from './map.js';
-import { locationCell, detailLink, AUTO_REFRESH_MS } from './dashboard.js';
+import { locationCell, detailLink, AUTO_REFRESH_MS, effectiveLocationState } from './dashboard.js';
 
 /** صفحة "المراقبة المباشرة" الموحدة: خريطة حية + حالة الكباتن الشغالين
  *  + كل مميزات النبضات (عدّاد النبضات بدون رد، آخر نبضة، نبضة فورية، متابعة خرائط جوجل).
@@ -15,7 +15,7 @@ export async function livePage(ctx) {
     if (!mapTried) { mapTried = true; m = await createMap(mapBox); if (!m) { mapBox.hidden = true; mapNote.textContent = t('Map unavailable (offline or blocked). The table below is complete.'); } }
     if (!m) return; m.layer.clearLayers(); const pts = [], seen = {};
     items.forEach((r) => { if (r.branch_latitude != null && !seen[r.branch_id]) { seen[r.branch_id] = 1; drawBranches(m, [{ name: r.branch_name, latitude: r.branch_latitude, longitude: r.branch_longitude, radius: r.branch_radius_meters }]); pts.push([r.branch_latitude, r.branch_longitude]); } });
-    items.forEach((r) => { if (r.last_latitude != null) { const stTxt = { INSIDE: t('Inside branch'), OUTSIDE: t('Outside branch'), UNKNOWN: t('Location unknown') }[r.location_state] || r.location_state; drawPoint(m, { lat: r.last_latitude, lng: r.last_longitude, state: r.location_state, label: `${r.employee_name} - ${stTxt}${r.tracking_unavailable ? ' (' + t('Tracking unavailable') + ')' : ''}` }); pts.push([r.last_latitude, r.last_longitude]); } });
+    items.forEach((r) => { if (r.last_latitude != null) { const eff = effectiveLocationState(r); const stTxt = { INSIDE: t('Inside branch'), OUTSIDE: t('Outside branch'), UNKNOWN: t('Location unknown'), OFF_GRID: t('Off the grid') }[eff] || eff; drawPoint(m, { lat: r.last_latitude, lng: r.last_longitude, state: eff, label: `${r.employee_name} - ${stTxt}${(eff === 'UNKNOWN' && r.tracking_unavailable) ? ' (' + t('Tracking unavailable') + ')' : ''}` }); pts.push([r.last_latitude, r.last_longitude]); } });
     if (!m.fitted && pts.length) { fit(m, pts); m.fitted = true; } else m.map.invalidateSize();
   }
   let lpRef = null;
@@ -59,5 +59,5 @@ export async function livePage(ctx) {
       drawMap(merged); return { items: merged };
     }
   });
-  return { el: h('div', {}, h('h1', {}, t('Live Monitoring')), h('p', { class: 'hint' }, t('"On break" means the captain is allowed to have location off. "Tracking unavailable" means no recent GPS data - it does not mean the employee left the branch.')), h('p', { class: 'hint' }, t('Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.')), h('p', { class: 'hint' }, t('Tip: the table scrolls sideways - drag the bar under the table (or hold Shift and roll the mouse wheel) to see the rest of the columns.')), mapBox, mapNote, lp.el), destroy: lp.stop };
+  return { el: h('div', {}, h('h1', {}, t('Live Monitoring')), h('p', { class: 'hint' }, t('"On break" means the captain is allowed to have location off. "Tracking unavailable" means no recent GPS data - it does not mean the employee left the branch.')), h('p', { class: 'hint' }, t('Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.')), h('p', { class: 'hint' }, t('GPS grace period: for up to 15 minutes after his last GPS update the captain keeps his last known state (green "Inside branch"). Only after a full 15 minutes with no GPS update does he show as "Off the grid".')), h('p', { class: 'hint' }, t('Tip: the table scrolls sideways - drag the bar under the table (or hold Shift and roll the mouse wheel) to see the rest of the columns.')), mapBox, mapNote, lp.el), destroy: lp.stop };
 }

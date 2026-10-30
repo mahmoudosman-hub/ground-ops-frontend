@@ -150,6 +150,7 @@ window.GOPS_ADMIN_I18N = {
     "On leave": "في إجازة",
     "Outside branch": "خارج الفرع",
     "Inside branch": "داخل الفرع",
+    "Off the grid": "مقطوع عن النظام",
     "Outside geofence": "خارج النطاق",
     "Inside geofence": "داخل النطاق",
     "Tracking unavailable": "التتبع متوقف",

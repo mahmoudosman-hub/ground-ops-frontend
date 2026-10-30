@@ -71,7 +71,8 @@ const AR = {
 
   // ---------- الحالات (Badges) ----------
   'On duty': 'شغال', 'Off': 'مش شغال', 'On break': 'في بريك', 'Break over limit': 'البريك عدى وقته',
-  'Inside branch': 'جوه الفرع', 'Outside branch': 'بره الفرع', 'Location unknown': 'مفيش موقع',
+  'Inside branch': 'جوه الفرع', 'Outside branch': 'بره الفرع', 'Location unknown': 'مفيش موقع', 'Off the grid': 'مقطوع عن النظام',
+  'GPS grace period: for up to 15 minutes after his last GPS update the captain keeps his last known state (green "Inside branch"). Only after a full 15 minutes with no GPS update does he show as "Off the grid".': 'مهلة الـ 15 دقيقة: لحد 15 دقيقة بعد آخر تحديث لوكيشن الكابتن يفضل ظاهر بآخر حالة معروفة (✔ جوه الفرع). وبعد ما تعدي الـ 15 دقيقة كاملة من غير أي تحديث لوكيشن يظهر «مقطوع عن النظام».',
   'Tracking active': 'التتبع شغال', 'Tracking paused': 'التتبع واقف مؤقتاً', 'Tracking unavailable': 'التتبع واقف', 'Tracking off': 'التتبع مقفول',
   'Location permission denied': 'إذن الموقع مرفوض', 'GPS disabled': 'الـ GPS مقفول', 'Background restricted': 'الشغل في الخلفية مقفول',
   'Low accuracy': 'دقة الموقع ضعيفة', 'Possible spoofing': 'شبهة موقع مزيّف', 'Missing check-out': 'لم يسجل الانصراف',
