@@ -1,4 +1,4 @@
-/* Ground OPS Tracker service worker - FAST LOAD (build d48) */
+/* Ground OPS Tracker service worker - FAST LOAD (build d49) */
 importScripts('./precache-manifest.js');
 const CACHE = `gops-${self.GOPS_PRECACHE.version}`;
 const SHELL = self.GOPS_PRECACHE.files;
