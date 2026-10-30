@@ -15,7 +15,7 @@ export async function livePage(ctx) {
     if (!mapTried) { mapTried = true; m = await createMap(mapBox); if (!m) { mapBox.hidden = true; mapNote.textContent = t('Map unavailable (offline or blocked). The table below is complete.'); } }
     if (!m) return; m.layer.clearLayers(); const pts = [], seen = {};
     items.forEach((r) => { if (r.branch_latitude != null && !seen[r.branch_id]) { seen[r.branch_id] = 1; drawBranches(m, [{ name: r.branch_name, latitude: r.branch_latitude, longitude: r.branch_longitude, radius: r.branch_radius_meters }]); pts.push([r.branch_latitude, r.branch_longitude]); } });
-    items.forEach((r) => { if (r.last_latitude != null) { drawPoint(m, { lat: r.last_latitude, lng: r.last_longitude, state: r.location_state, label: `${r.employee_name} - ${r.location_state}${r.tracking_unavailable ? ' (tracking unavailable)' : ''}` }); pts.push([r.last_latitude, r.last_longitude]); } });
+    items.forEach((r) => { if (r.last_latitude != null) { const stTxt = { INSIDE: t('Inside branch'), OUTSIDE: t('Outside branch'), UNKNOWN: t('Location unknown') }[r.location_state] || r.location_state; drawPoint(m, { lat: r.last_latitude, lng: r.last_longitude, state: r.location_state, label: `${r.employee_name} - ${stTxt}${r.tracking_unavailable ? ' (' + t('Tracking unavailable') + ')' : ''}` }); pts.push([r.last_latitude, r.last_longitude]); } });
     if (!m.fitted && pts.length) { fit(m, pts); m.fitted = true; } else m.map.invalidateSize();
   }
   let lpRef = null;
@@ -56,5 +56,5 @@ export async function livePage(ctx) {
       drawMap(merged); return { items: merged };
     }
   });
-  return { el: h('div', {}, h('h1', {}, t('Live Monitoring')), h('p', { class: 'hint' }, t('"On break" means the captain is allowed to have location off. "Tracking unavailable" means no recent GPS data - it does not mean the employee left the branch.')), h('p', { class: 'hint' }, t('Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.')), mapBox, mapNote, lp.el), destroy: lp.stop };
+  return { el: h('div', {}, h('h1', {}, t('Live Monitoring')), h('p', { class: 'hint' }, t('"On break" means the captain is allowed to have location off. "Tracking unavailable" means no recent GPS data - it does not mean the employee left the branch.')), h('p', { class: 'hint' }, t('Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.')), h('p', { class: 'hint' }, t('Tip: the table scrolls sideways - drag the bar under the table (or hold Shift and roll the mouse wheel) to see the rest of the columns.')), mapBox, mapNote, lp.el), destroy: lp.stop };
 }

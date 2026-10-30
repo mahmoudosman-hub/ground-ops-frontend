@@ -1,6 +1,6 @@
 import { h, mount } from '../../core/dom.js';
 import { cfg } from '../../core/config.js';
-import { t, initLang } from '../../core/i18n.js';
+import { t, initLang, getLang, setLang } from '../../core/i18n.js';
 import { createApi } from '../../core/api.js';
 import { errorMessage } from '../../core/errors.js';
 import { buildForm, badge, button, toast } from '../../components/ui.js';
@@ -44,8 +44,10 @@ export function mountAdminApp(root, deps = {}) {
   const api = deps.api || createApi('admin'), lookups = createLookups(api);
   let current = null, notice = null, bell = null;
   const content = h('main', { id: 'main', class: 'content', tabindex: '-1' }), nav = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('Main navigation') }), who = h('span', { class: 'who' }), bellBox = h('span', { id: 'bell-box' });
+  // زرار اللغة: يقلب الواجهة كلها عربي/إنجليزي ويحفظ الاختيار (d47)
+  const langBtn = button(getLang() === 'ar' ? 'EN' : 'عربي', { small: true, id: 'btn-lang', aria: 'Language / اللغة', on: { click: () => { const next = getLang() === 'ar' ? 'en' : 'ar'; setLang(next); try { localStorage.setItem('gops.admin.lang', next); localStorage.setItem('gops.lang.user', '1'); } catch (e) { /* ignore */ } globalThis.location.reload(); } } });
   const menuBtn = h('button', { class: 'icon-btn menu-btn', type: 'button', id: 'btn-menu', 'aria-label': t('Menu'), 'aria-expanded': 'false', on: { click: () => { const open = nav.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(open)); } } }, '☰');
-  const shell = h('div', { class: 'admin-shell' }, h('header', { class: 'app-header' }, menuBtn, h('div', { class: 'brand' }, h('img', { src: './assets/icons/icon-192.png', alt: '', width: 28, height: 28 }), h('span', {}, cfg().APP_NAME + ' - ' + t('Admin'))), bellBox, who,
+  const shell = h('div', { class: 'admin-shell' }, h('header', { class: 'app-header' }, menuBtn, h('div', { class: 'brand' }, h('img', { src: './assets/icons/icon-192.png', alt: '', width: 28, height: 28 }), h('span', {}, cfg().APP_NAME + ' - ' + t('Admin'))), bellBox, langBtn, who,
     button(t('Sign out'), { small: true, id: 'btn-logout', on: { click: async () => { cleanup(); await api.logout(); notice = null; boot(); } } })), nav, content);
   api.onSessionEnd((code) => { notice = errorMessage({ code }); cleanup(); boot(); });
 

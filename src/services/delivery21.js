@@ -10,7 +10,7 @@
   var LANG_KEY = 'gops.admin.lang';
   var HINTS_ENABLED_KEY = 'gops.admin.hints';
 
-  function getLang() { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { return 'en'; } }
+  function getLang() { try { return localStorage.getItem(LANG_KEY) || localStorage.getItem('gops.lang') || 'en'; } catch (e) { return 'en'; } } // d47: بيرث اللغة من نظام الترجمة الجديد عشان الاتنين متضربوش في بعض
   function setLang(v) { try { localStorage.setItem(LANG_KEY, v); } catch (e) {} }
   function hintsEnabled() { try { return localStorage.getItem(HINTS_ENABLED_KEY) !== 'false'; } catch (e) { return true; } }
   function setHints(v) { try { localStorage.setItem(HINTS_ENABLED_KEY, v ? 'true' : 'false'); } catch (e) {} }
@@ -174,13 +174,8 @@
     btn.onclick = function () {
       var next = getLang() === 'ar' ? 'en' : 'ar';
       setLang(next);
-      if (next === 'ar') {
-        document.querySelectorAll('[data-gops-orig-desc]').forEach(function (el) {
-          delete el.dataset.gopsOrigDesc;
-        });
-      }
-      applyAll();
-      render();
+      try { localStorage.setItem('gops.lang', next); localStorage.setItem('gops.lang.user', '1'); } catch (e) {} // d47: وحدة اللغة مع النظام الجديد
+      location.reload();
     };
     hintsBox.onchange = function () { setHints(hintsBox.checked); applyAll(); };
     render();

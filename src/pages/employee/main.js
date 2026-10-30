@@ -1,3 +1,4 @@
+import '../../i18n/ar.js'; // القاموس العربي (d47)
 import { mountEmployeeApp } from './app.js';
 import { initPwa } from '../../services/pwa.js';
 import { installNativeBridge } from '../../services/native/bridge.js';
