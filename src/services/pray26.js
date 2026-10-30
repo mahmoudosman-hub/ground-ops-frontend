@@ -62,6 +62,12 @@
     return m + ':' + (s < 10 ? '0' : '') + s;
   }
 
+  // نص الزر وقت الصلاة: العدّاد + تلميح واضح إن الضغط بيقفل البريك
+  function prayLabel() {
+    return 'في صلاة — ' + fmt(remainSec) +
+      '<br><small style="font-size:11px;font-weight:400;opacity:.95">اضغط هنا عشان تقفل البريك</small>';
+  }
+
   function paint(praying) {
     var b = ensureBtn();
     var tx = document.getElementById('gops-pray-tx');
@@ -69,7 +75,7 @@
     if (praying) {
       b.style.background = '#8a5a00';
       b.style.animation = 'gopsPrayPulse 2s infinite';
-      tx.textContent = 'في صلاة — ' + fmt(remainSec);
+      tx.innerHTML = prayLabel();
       ic.textContent = '🤲';
       startCountdown();
     } else {
@@ -87,7 +93,7 @@
       if (remainSec > 0) {
         remainSec--;
         var tx = document.getElementById('gops-pray-tx');
-        if (tx) tx.textContent = 'في صلاة — ' + fmt(remainSec);
+        if (tx) tx.innerHTML = prayLabel();
       }
       if (remainSec <= 0) {
         stopCountdown();
@@ -97,19 +103,34 @@
   }
   function stopCountdown() { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } }
 
+  // رسالة تأكيد قصيرة بعد قفل البريك يدوياً
+  var flashing = false;
+  function flashEnd() {
+    var b = ensureBtn();
+    var tx = document.getElementById('gops-pray-tx');
+    var ic = document.getElementById('gops-pray-ic');
+    flashing = true;
+    b.style.animation = '';
+    if (tx) tx.textContent = 'اتقفل البريك ✅';
+    if (ic) ic.textContent = '🕌';
+    setTimeout(function () { flashing = false; paint(false); }, 2500);
+  }
+
   async function onTap() {
+    if (flashing) return; // أثناء رسالة "اتقفل البريك" نتجاهل الضغط
     var praying = remainSec > 0;
     try {
       if (!praying) {
-        if (!window.confirm('هبدأ بريك صلاة 15 دقيقة؟\nخلال الوقت ده مش هيوصلك أي إشعارات، والبريك بيقفل لوحده.')) return;
+        if (!window.confirm('هبدأ بريك صلاة 15 دقيقة؟\nخلال الوقت ده مش هيوصلك أي إشعارات.\nولو خلصت بدري: دوس على نفس الزر تاني وهيقفل على طول.')) return;
         var r = await api('startPrayBreak', {});
         remainSec = r.remaining_seconds || (15 * 60);
         paint(true);
       } else {
-        if (!window.confirm('الصلاة لسه شغالة (' + fmt(remainSec) + ' باقية).\nتريد إنهاءها الآن؟')) return;
+        if (!window.confirm('الصلاة شغالة وباقي ' + fmt(remainSec) + '.\nتحب تقفل البريك دلوقتي؟')) return;
         await api('endPrayBreak', {});
         remainSec = 0;
-        paint(false);
+        stopCountdown();
+        flashEnd();
       }
     } catch (e) {
       var msg = (e && e.message) || '';
