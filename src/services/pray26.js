@@ -62,10 +62,11 @@
     return m + ':' + (s < 10 ? '0' : '') + s;
   }
 
-  // نص الزر وقت الصلاة: العدّاد + تلميح واضح إن الضغط بيقفل البريك
+  // نص الزر وقت الصلاة: اسم الإجراء (إيقاف بريك الصلاة) + الوقت المتبقي
+  // — الكابتن يفهم من الشكل إن الضغط على الزر بيقفل البريك
   function prayLabel() {
-    return 'في صلاة — ' + fmt(remainSec) +
-      '<br><small style="font-size:11px;font-weight:400;opacity:.95">اضغط هنا عشان تقفل البريك</small>';
+    return 'إيقاف بريك الصلاة' +
+      '<br><small style="font-size:11px;font-weight:400;opacity:.95">باقي ' + fmt(remainSec) + ' — دوس تاني وهيقفل</small>';
   }
 
   function paint(praying) {

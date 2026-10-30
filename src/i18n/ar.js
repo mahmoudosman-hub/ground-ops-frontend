@@ -15,5 +15,6 @@ registerLang('ar', {
   'No captains on duty right now. Tick "Show off-duty too" above to see everyone.': 'مفيش حد شغال في الشيفت دلوقتي. لو عايز تشوف الكل، علّم من فوق على «إظهار اللي خارج الشيفت كمان».',
   'Show off-duty too': 'إظهار اللي خارج الشيفت كمان',
   'Captains on duty now: {n} of {total}': 'شغالين في الشيفت دلوقتي: {n} من أصل {total}',
+  'Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.': 'النبضات: النظام بيبعت نبضة تلقائية لأي كابتن موقعها بقى قديم (كل 15 دقيقة)، وعمود "نبضات بدون رد" بيوضح مين ما ردّش، وزرار "نبضة فورية" تبعت بيها نبضة بنفسك.',
   'Live map of captains on duty (iPhone PWA + Android). The system pings captains whose location is stale every 15 minutes; the counter shows pings without a reply.': 'خريطة حية للكباتن الشغالين (آيفون + أندرويد). النظام بيتبع أي كابتن موقعه قديم كل ١٥ دقيقة، والعدّاد بيوضح مين ما ردّش.'
 }, true);

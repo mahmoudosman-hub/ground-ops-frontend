@@ -7,7 +7,6 @@ import { buildForm, badge, button, toast } from '../../components/ui.js';
 import { createLookups } from './lookups.js';
 import { dashboardPage } from './dashboard.js';
 import { livePage } from './live.js';
-import { liveMapPage } from './livemap.js';
 import { employeesPage } from './employees.js';
 import { employeeDetailPage } from './employee-detail.js';
 import { branchesPage } from './branches.js';
@@ -24,7 +23,6 @@ import { requestsPage } from './requests.js';
 
 export const ROUTES = [
   { path: 'dashboard', title: 'Dashboard', perm: 'view_current_status', page: dashboardPage, nav: true }, { path: 'live', title: 'Live Monitoring', perm: 'view_current_status', page: livePage, nav: true },
-  { path: 'livemap', title: 'Map & Pings', perm: 'view_current_status', page: liveMapPage, nav: true },
   { path: 'requests', title: 'Requests', perm: 'manage_requests', page: requestsPage, nav: true },
   { path: 'alerts', title: 'Alerts', perm: 'view_alerts', page: alertsPage, nav: true },
   { path: 'employees', title: 'Employees', perm: 'view_employees', page: employeesPage, nav: true }, { path: 'employee', title: 'Employee Details', perm: 'view_employees', page: employeeDetailPage },

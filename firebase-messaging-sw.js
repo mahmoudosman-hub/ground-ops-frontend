@@ -1,7 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
-// Ground OPS push handler - build d45
+// Ground OPS push handler - build d46
 // 1) التطبيق مفتوح قدام الكابتن (أندرويد): مفيش رنة — الرسالة بتوصل للتطبيق نفسه
 // 2) آيفون: آبل بتفرض إن كل إشعار يظهر (لو اتخفي بتفضل اشتراك الإشعارات) —
 //    لذلك الإسكات على الآيفون بيحصل من السيرفر نفسه (نافذة الهدوء) مش من هنا
