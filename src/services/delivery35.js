@@ -1,5 +1,5 @@
 /**
- * Ground OPS - Delivery 35 (Fix Schedule Import Stuck Spinner)
+ * Ground OPS - Delivery 35 v2 (Force Unlock Apply Button)
  */
 (function () {
   'use strict';
@@ -9,14 +9,24 @@
   function unlockApplyButton() {
     var btns = document.querySelectorAll('button');
     btns.forEach(function (b) {
-      var text = (b.innerText || "").trim().toLowerCase();
-      // لو الزرار بتاع Apply لسه مقفول
-      if ((text === 'apply' || text === 'تطبيق' || text === '...') && (b.disabled || b.classList.contains('gops-loading'))) {
-        b.disabled = false;
-        b.style.pointerEvents = '';
-        b.style.opacity = '';
-        b.classList.remove('gops-loading');
-        b.innerHTML = 'Apply'; // نرجع النص بتاعه
+      var text = (b.innerText || "").trim();
+      // لو الزرار ده شكله Apply أو بيحمل (...)
+      if (text === 'Apply' || text === 'تطبيق' || text === '...') {
+        // لو بيحمل، بنفكه
+        if (b.disabled || b.innerHTML.includes('spinner') || b.innerHTML.includes('...')) {
+            b.disabled = false;
+            b.innerHTML = 'Apply';
+            b.style.opacity = '1';
+            b.style.pointerEvents = '';
+            b.classList.remove('gops-loading');
+            
+            // لو الموقع بيخفي الزرار وبيعرض زرار تاني، بنرجع نظهره
+            var parent = b.parentElement;
+            if (parent && parent.querySelector('.spinner')) {
+                var spinner = parent.querySelector('.spinner');
+                if (spinner) spinner.style.display = 'none';
+            }
+        }
       }
     });
   }
@@ -36,21 +46,16 @@
 
     // لو الطلب ده هو "applyScheduleImport" (تطبيق الجدول)
     if (action === 'applyScheduleImport') {
-      promise.then(function (res) {
-        if (res && res.ok) {
-          // بنستنى ثانية وبعدين نفك الزرار غصب عنه
-          setTimeout(unlockApplyButton, 1000);
-        }
-      }).catch(function() {
-         setTimeout(unlockApplyButton, 1000);
-      });
+      // بنبدأ نراقب الزرار كل ثانية
+      var attempts = 0;
+      var interval = setInterval(function() {
+          unlockApplyButton();
+          attempts++;
+          // بنفضل نحاول لمدة 20 ثانية وبعدها نقف
+          if (attempts > 20) clearInterval(interval);
+      }, 1000);
     }
     
-    // كمان كإجراء أمان، لو داس على Apply ومرت 15 ثانية، بنفك الزرار
-    if (action === 'applyScheduleImport') {
-        setTimeout(unlockApplyButton, 15000);
-    }
-
     return promise;
   };
 })();
