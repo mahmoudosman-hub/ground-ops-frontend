@@ -58,6 +58,13 @@ const AR = {
   'Google Maps': 'خرائط جوجل', 'Watch': 'متابعة', 'Watching': 'بيتم المتابعة',
   'Removed from Google Maps watchlist': 'اتشالت من قائمة متابعة خرائط جوجل', 'Marked as sharing on Google Maps': 'اتسجل على قائمة متابعة خرائط جوجل',
 
+  // ---------- الإشعارات (d48) ----------
+  'Notifications': 'الإشعارات', 'Notifications ({n} unread)': 'الإشعارات ({n} غير مقروء)',
+  'Mark all as read': 'تحديد الكل كمقروء', 'Mark as read': 'تحديد كمقروء',
+  'All notifications marked as read': 'تمام — كل الإشعارات اتقرت ✅',
+  'Tap to mark as read': 'دوس هنا عشان يتحدد كمقروء',
+  'No notifications.': 'مفيش إشعارات.',
+
   // ---------- الحالات (Badges) ----------
   'On duty': 'شغال', 'Off': 'مش شغال', 'On break': 'في بريك', 'Break over limit': 'البريك عدى وقته',
   'Inside branch': 'جوه الفرع', 'Outside branch': 'بره الفرع', 'Location unknown': 'مفيش موقع',
