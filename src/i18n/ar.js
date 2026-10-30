@@ -35,6 +35,10 @@ const AR = {
   'Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.': 'النبضات: النظام بينادي تلقائياً على أي كابتن موقعه بقى قديم (كل 15 دقيقة)، وعمود «نبضات بدون رد» بيوضح مين ما ردش، وزرار «نبضة فورية» تبعت بيها نداء بنفسك.',
   'End the break of {n}? Location tracking resumes for them.': 'هتقفل بريك {n}؟ التتبع هيرجع يشتغل عنده تاني.',
   'Break ended': 'اتقفل البريك ✅',
+  'End the shift of {n}? Their open break ends too, and they can check in again right after.': 'هتقفل شيفت {n} دلوقتي؟ أي بريك مفتوح هيقفل معاه، والكابتن يقدر يفتح شيفت جديد بعدها على طول.',
+  'End shift': 'قفل الشيفت',
+  'Shift ended': 'اتقفل الشيفت ✅',
+  'No open shift for this captain': 'مفيش شيفت مفتوحة للكابتن ده',
   'Open alerts ({n})': 'تنبيهات مفتوحة ({n})', 'Open alerts page': 'افتح صفحة التنبيهات',
 
   // ---------- أعمدة الجداول ----------

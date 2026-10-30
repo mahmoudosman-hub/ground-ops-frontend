@@ -20,6 +20,9 @@ export async function livePage(ctx) {
   }
   let lpRef = null;
   async function endBreak(r) { if (!(await confirmDialog(t('End the break of {n}? Location tracking resumes for them.', { n: r.employee_name })))) return; try { await ctx.api.call('adminEndBreak', { employee_id: r.employee_id }); toast(t('Break ended'), 'ok'); lpRef.reload(); } catch (e) { toastError(e); } }
+  // d50: زرار قفل الشيفت للأدمن — بيستخدم أكشن adminEndShift الجاهز في S6 على السيرفر
+  // (بيقفل أي شيفت مفتوحة للكابتن + أي بريك مفتوح، وبيبعتله إشعار، ويسجل في الأرشيف)
+  async function endShift(r) { if (!(await confirmDialog(t('End the shift of {n}? Their open break ends too, and they can check in again right after.', { n: r.employee_name }), { okLabel: t('End shift'), danger: true }))) return; try { const res = await ctx.api.call('adminEndShift', { employee_id: r.employee_id, reason: 'admin-dashboard' }); toast(res && res.closed_shifts ? t('Shift ended') : t('No open shift for this captain'), res && res.closed_shifts ? 'ok' : 'info'); lpRef.reload(); } catch (e) { toastError(e); } }
   async function pingNow(r) {
     try {
       const res = await ctx.api.call('pingEmployeeNow', { employee_id: r.employee_id });
@@ -45,7 +48,7 @@ export async function livePage(ctx) {
       { key: 'pings_unanswered', label: 'Pings without reply', render: (r) => (r.pings_unanswered ? h('strong', { style: 'color:#c62828' }, String(r.pings_unanswered)) : '0') },
       { key: 'last_ping_at', label: 'Last ping', render: (r) => (r.last_ping_at ? agoText(r.last_ping_at) : '-') },
       { key: 'gmaps_shared', label: 'Google Maps', render: (r) => button(r.gmaps_shared ? t('Watching') : t('Watch'), { small: true, class: r.gmaps_shared ? 'x' : '', on: { click: () => toggleGmaps(r) } }) },
-      { key: 'actions', label: 'Actions', render: (r) => h('span', { class: 'btn-row' }, detailLink(r), r.on_break && ctx.user.permissions.includes('assign_shifts') ? button(t('End break'), { small: true, class: 'x', on: { click: () => endBreak(r) } }) : null, button(t('Ping now'), { small: true, kind: 'primary', on: { click: () => pingNow(r) } })) }],
+      { key: 'actions', label: 'Actions', render: (r) => h('span', { class: 'btn-row' }, detailLink(r), r.on_break && ctx.user.permissions.includes('assign_shifts') ? button(t('End break'), { small: true, class: 'x', on: { click: () => endBreak(r) } }) : null, ctx.user.permissions.includes('assign_shifts') ? button(t('End shift'), { small: true, class: 'x', on: { click: () => endShift(r) } }) : null, button(t('Ping now'), { small: true, kind: 'primary', on: { click: () => pingNow(r) } })) }],
     empty: t('No employees are currently on duty.'),
     async load() {
       const res = await ctx.api.call('getCurrentStatuses', { date: todayLocal(), page_size: 500 }); const active = res.items.filter((r) => r.attendance_state === 'CHECKED_IN');
