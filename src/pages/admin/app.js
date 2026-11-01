@@ -52,7 +52,7 @@ export function mountAdminApp(root, deps = {}) {
   const api = deps.api || createApi('admin'), lookups = createLookups(api);
   let current = null, notice = null, bell = null;
   const content = h('main', { id: 'main', class: 'content', tabindex: '-1' }), nav = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('Main navigation') }), who = h('span', { class: 'who' }), bellBox = h('span', { id: 'bell-box' });
-  const APP_VER = 'd59'; // d59: رقم النسخة ظاهر في الهيدر — عشان نعرف فوراً إنت شغال بأنهي نسخة (لازم يتعدل مع precache-manifest.js)
+  const APP_VER = 'd60'; // d60: التبديل من غير نافذة تأكيد — بيطبق فوراً (لازم يتعدل مع precache-manifest.js)
   // زرار اللغة: يقلب الواجهة كلها عربي/إنجليزي ويحفظ الاختيار (d47)
   const langBtn = button(getLang() === 'ar' ? 'EN' : 'عربي', { small: true, id: 'btn-lang', aria: 'Language / اللغة', on: { click: () => { const next = getLang() === 'ar' ? 'en' : 'ar'; setLang(next); try { localStorage.setItem('gops.admin.lang', next); localStorage.setItem('gops.lang.user', '1'); } catch (e) { /* ignore */ } globalThis.location.reload(); } } });
   const menuBtn = h('button', { class: 'icon-btn menu-btn', type: 'button', id: 'btn-menu', 'aria-label': t('Menu'), 'aria-expanded': 'false', on: { click: () => { const open = nav.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(open)); } } }, '☰');
