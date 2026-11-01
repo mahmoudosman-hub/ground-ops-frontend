@@ -109,12 +109,9 @@
   }
 
   function fixSelfieFab() {
+    // d61: الزرار العائم اتشال خالص — بيتمسح لو موجود من جلسة قديمة
     var fab = document.getElementById('gops-sc-fab');
-    if (fab && fab.textContent !== '📸') {
-      fab.textContent = '📸';
-      fab.style.padding = '12px 14px';
-      fab.title = 'Selfie Checks';
-    }
+    if (fab) fab.remove();
   }
 
     function hideOldLangButton() {
