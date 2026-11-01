@@ -21,6 +21,14 @@ import { alertsPage } from './alerts.js';
 import { scheduleImportPage } from './schedule-import.js';
 import { requestsPage } from './requests.js';
 
+/* d58: شريط «فيه نسخة جديدة» على الداشبورد — كان موجود في تطبيق الكابتن بس،
+ * فالأدمن كان بيفضل على النسخة القديمة من غير ما يدري (وده اللي خلى إصلاح
+ * نافذة التأكيد «يوصل متوصلش» أكتر من مرة). أي تحديث جديد هيظهر زرار حدّث فوق. */
+globalThis.addEventListener('gops-update-ready', (e) => {
+  const box = globalThis.document.getElementById('update-bar');
+  if (box) mount(box, h('div', { class: 'alert alert-info' }, t('A new version is available.'), ' ', button(t('Reload'), { small: true, on: { click: () => { const w = e.detail && e.detail.waiting; if (w) w.postMessage('SKIP_WAITING'); globalThis.location.reload(); } } })));
+});
+
 export const ROUTES = [
   { path: 'dashboard', title: 'Dashboard', perm: 'view_current_status', page: dashboardPage, nav: true }, { path: 'live', title: 'Live Monitoring', perm: 'view_current_status', page: livePage, nav: true },
   { path: 'requests', title: 'Requests', perm: 'manage_requests', page: requestsPage, nav: true },

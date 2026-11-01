@@ -85,6 +85,8 @@ const AR = {
   'Pick two different captains.': 'اختار كابتنين مختلفين.',
   'Swap the shifts of {a} and {b} on {d}? Each one gets a notification with the new branch.': 'هتبدل شيفت {a} و {b} يوم {d}؟ كل واحد فيهم هيوصله إشعار بالفرع الجديد.',
   'Swapped ✅ {a} → {ab} and {b} → {bb}. Push delivered to {n} device(s).': 'اتبدل ✅ {a} ← فرع {ab} ، و {b} ← فرع {bb}. الإشعار وصل لـ {n} جهاز.',
+  'Swapping... please wait': 'جاري التبديل... استنى لحظة', // d58
+  'A new version is available.': 'فيه نسخة جديدة من البرنامج جاهزة.', 'Reload': 'حدّث', // d58
   'No active assignment on that date for {n}.': '{n} مالوش شيفت مسجلة في اليوم ده.',
   'No registered device for: {n}': 'مفيش جهاز مسجل بإشعارات لـ: {n}'
 };
