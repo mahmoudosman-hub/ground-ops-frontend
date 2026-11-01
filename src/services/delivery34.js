@@ -63,7 +63,7 @@
             payload: { all: true },
             client: 'delivery34/3.0'
           })
-        }).catch(function(err) { console.log('API ignored error'); });
+        }).catch(function(err) { /* Error handled silently */ });
       }
     }
   }, true); // 👈 الرقم true ده هو السر، بيخلي كودنا يشتغل الأول قبل كود الموقع

@@ -80,7 +80,7 @@
 
   async function postRegister(sess, fcmToken, platform) {
     var url = apiUrl();
-    if (!url) { console.error('Push register: API_URL not found'); return false; }
+    if (!url) { return false; }
     try {
       var res = await fetch(url, {
         method: 'POST',
@@ -99,14 +99,12 @@
         // عشان تسجيل الخروج يمسحه من السيرفر تلقائياً زي ما هو أصلاً
         try { localStorage.setItem('gops.fcm.token', fcmToken); } catch (e) {}
         saveRegState({ token: fcmToken, employee: sess.user.employee_id, platform: platform, at: Date.now() });
-        console.log('✅ Push token registered (' + platform + ') for:', sess.user.employee_id);
         var btn = document.getElementById('gops-enable-notif-btn');
         if (btn) btn.remove();
         return true;
       }
       return false;
     } catch (err) {
-      console.error('Push register error:', err);
       return false;
     }
   }
