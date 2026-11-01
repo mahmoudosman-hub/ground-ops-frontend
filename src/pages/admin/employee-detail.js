@@ -3,7 +3,7 @@ import { t } from '../../core/i18n.js';
 import { fmtTime, fmtDateTime, todayLocal, addDays, minutesText } from '../../core/time.js';
 import { badge, button, buildForm, openModal, toast, dataTable, spinner, errorBox, emptyState } from '../../components/ui.js';
 import { showSelfie } from './records.js';
-import { createMap, drawBranches, drawPoint, fit } from './map.js';
+import { createMap, drawBranches, drawTrack, fit } from './map.js';
 import { statusCells, locationCell } from './dashboard.js';
 
 const settle = async (p) => { try { return { ok: await p }; } catch (e) { return { err: e }; } };
@@ -53,10 +53,16 @@ export async function employeeDetailPage(ctx) {
   const absSec = sec('Absence history (90 days)', guard(absent, (x) => (x.rows.length ? dataTable({ columns: [{ key: 'work_date', label: 'Date' }, { key: 'shift_name', label: 'Shift' }, { key: 'branch_name', label: 'Branch' }], rows: x.rows }) : emptyState(t('No absences.')))), 'detail-absent');
   const lvSec = sec('Leave history', guard(leaves, (x) => (x.items.length ? dataTable({ columns: [{ key: 'date', label: 'Date' }, { key: 'leave_type', label: 'Type' }, { key: 'status', label: 'Status', render: (r) => badge(r.status) }, { key: 'notes', label: 'Notes' }], rows: x.items }) : emptyState(t('No leave recorded.')))), 'detail-leave');
   mount(root, h('div', { class: 'detail-head' }, h('a', { href: '#/employees', class: 'btn btn-small' }, '← ' + t('Employees')), h('h1', {}, e.employee_name)), datePick, h('div', { class: 'grid-2' }, profile, today), timeline, mapSec, evSec, brkSec, schedSec, h('div', { class: 'grid-3' }, lateSec, absSec, lvSec));
+  // d62: الخريطة بترسم «مسار الحركة» كله — خط بيوصل النقط مرتبة بالساعة + علامة البداية وآخر موقع
   createMap(mapBox).then((m) => {
     if (!m) { mapSec.hidden = true; return; }
-    const pts = [], br = a && l.branches.find((b) => b.branch_id === a.branch_id); if (br) { drawBranches(m, [{ name: br.branch_name, latitude: br.latitude, longitude: br.longitude, radius: br.geofence_radius_meters }]); pts.push([br.latitude, br.longitude]); }
-    if (hist.ok) hist.ok.items.forEach((p) => { drawPoint(m, { lat: p.latitude, lng: p.longitude, state: p.inside_geofence ? 'INSIDE' : 'OUTSIDE', label: `${fmtTime(p.timestamp)}` }); pts.push([p.latitude, p.longitude]); }); fit(m, pts);
+    const br = a && l.branches.find((b) => b.branch_id === a.branch_id); if (br) drawBranches(m, [{ name: br.branch_name, latitude: br.latitude, longitude: br.longitude, radius: br.geofence_radius_meters }]);
+    const track = hist.ok ? hist.ok.items.filter((p) => p.latitude != null && p.longitude != null)
+      .map((p) => ({ lat: p.latitude, lng: p.longitude, state: p.inside_geofence ? 'INSIDE' : 'OUTSIDE', label: `${fmtTime(p.timestamp)}`, ts: p.timestamp }))
+      .sort((x, y) => (x.ts < y.ts ? -1 : x.ts > y.ts ? 1 : 0)) : [];
+    drawTrack(m, track);
+    const pts = track.map((p) => [p.lat, p.lng]); if (br) pts.push([br.latitude, br.longitude]); fit(m, pts);
+    if (!track.length) mapSec.appendChild(h('p', { class: 'hint', id: 'map-empty-note' }, t(hist.ok ? 'No movements recorded on the map for this date.' : "Could not load today's movements. Try refreshing the page.")));
   });
   return { el: root };
 }

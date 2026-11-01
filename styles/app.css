@@ -100,3 +100,7 @@ input, select, textarea { font: inherit; min-height: var(--tap); padding: 8px 10
 .notif-list li.read { opacity: .5; background: #f3f5f8; border-radius: 8px; padding: 8px 10px; } .notif-list li.read strong { color: var(--muted); font-weight: 500; }
 @media (min-width: 960px) { .cards { grid-template-columns: repeat(8, 1fr); } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+/* d62: زر تبديل خريطة الشوارع/القمر الصناعي جوه الخريطة */
+.gops-map-toggle { background: transparent; border: 0; }
+.gops-map-toggle button { display: block; width: 34px; height: 34px; border: 0; background: #fff; font-size: 16px; line-height: 34px; cursor: pointer; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,.4); }
+.gops-map-toggle button:active { background: #e8eef5; }

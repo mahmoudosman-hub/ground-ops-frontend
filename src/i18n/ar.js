@@ -97,4 +97,10 @@ try {
   for (const k in legacy) if (!(k in AR)) AR[k] = legacy[k];
 } catch (e) { /* القاموس القديم اختياري (موجود في admin.html بس) */ }
 
+  // d62: الخريطة — مسار الحركة والتبديل للقمر الصناعي
+  AR['No movements recorded on the map for this date.'] = 'مفيش حركة مسجلة على الخريطة في اليوم ده.';
+  AR["Could not load today's movements. Try refreshing the page."] = 'مش قادرين نجيب حركة اليوم — جرب تعمل تحديث للصفحة.';
+  AR['Satellite view'] = 'صورة قمر صناعي';
+  AR['Street view'] = 'خريطة شوارع';
+
 registerLang('ar', AR, true);
