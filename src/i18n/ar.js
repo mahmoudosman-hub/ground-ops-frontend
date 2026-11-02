@@ -94,7 +94,14 @@ const AR = {
   // d66: رسايل التايمآوت في صفحة استيراد الجدول
   'The server is taking longer than expected. The changes were most likely applied successfully.': 'السيرفر بياخد وقت أطول من المتوقع. التغييرات غالبًا اتنفذت بنجاح.',
   'Reload the page to confirm.': 'حدّث الصفحة للتأكيد.',
-  'Taking longer than expected — reload to confirm': 'بياخد وقت أطول من المتوقع — حدّث الصفحة للتأكيد'
+  'Taking longer than expected — reload to confirm': 'بياخد وقت أطول من المتوقع — حدّث الصفحة للتأكيد',
+  // d66: ميزة زرار «✅ شغال» (d56) في المراقبة المباشرة
+  'Active': 'شغال',
+  'Confirm that {n} is active? This will reset their "off the grid" timer for 15 minutes.': 'تأكيد إن {n} شغال؟ ده هيصفّر مؤقت «خارج الشبكة» بتاعه لمدة ١٥ دقيقة.',
+  '✅ Yes, they are active': '✅ أيوه، شغال',
+  'Updated — {n} is now shown as active for 15 minutes': 'تم — {n} هيظهر شغال لمدة ١٥ دقيقة',
+  'I confirmed this captain is active via Google Maps. Reset their off-grid timer.': 'أنا متأكد إن الكابتن ده شغال من خرائط جوجل. ده هيصفّر مؤقت «خارج الشبكة» بتاعه.',
+  '🗺️ iPhone captains: Watch Live opens their Google Maps location. ✅ Active confirms they are working and resets their off-grid timer for 15 minutes.': '🗺️ كباتن الآيفون: «متابعة لايف» بتفتح موقعهم على خرائط جوجل. و«✅ شغال» بتأكد إن الكابتن بيشتغل وبتصفّر مؤقت «خارج الشبكة» ١٥ دقيقة.'
 };
 
 // دمج قاموس الأدمن القديم (admin-translations.js) — المفاتيح اللي مكتوبة فوق ليها الأولوية دايماً
