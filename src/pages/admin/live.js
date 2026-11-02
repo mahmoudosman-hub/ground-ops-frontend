@@ -5,9 +5,9 @@ import { badge, button, listPage, errorBox, confirmDialog, toast, toastError } f
 import { createMap, drawBranches, drawPoint, fit } from './map.js';
 import { locationCell, detailLink, AUTO_REFRESH_MS, effectiveLocationState } from './dashboard.js';
 
-/** صفحة "المراقبة المباشرة" الموحدة: خريطة حية + حالة الكباتن الشغالين
- *  + كل مميزات النبضات (عدّاد النبضات بدون رد، آخر نبضة، نبضة فورية، متابعة خرائط جوجل).
- *  d55: زرار Watch دلوقتي بيفتح Google Maps Live Share لو الكابتن بعت رابط */
+/** صفحة "المراقبة المباشرة" الموحدة
+ *  d55: Watch Live يفتح Google Maps
+ *  d56: زرار أخضر "✅ شغال" يحدّث timestamp الكابتن يدوياً (لـ iOS بس) */
 export async function livePage(ctx) {
   const mapBox = h('div', { id: 'live-map', class: 'map', role: 'img', 'aria-label': t('Map of active employees') }), mapNote = h('p', { class: 'hint', id: 'map-note' });
   let m = null, mapTried = false;
@@ -30,14 +30,12 @@ export async function livePage(ctx) {
     } catch (e) { toastError(e); }
   }
 
-  // d55: Watch — لو في رابط Google Maps يفتحه، لو مفيش يحفظ الـ flag بس
+  // d55: Watch Live — يفتح Google Maps لو في رابط
   async function toggleGmaps(r) {
-    // لو في رابط محفوظ → افتحه في تاب جديد
     if (r.gmaps_link) {
       globalThis.open(r.gmaps_link, '_blank', 'noopener,noreferrer');
       return;
     }
-    // لو مفيش رابط → toggle الـ flag العادي
     try {
       await ctx.api.call('setGmapsSharing', { employee_id: r.employee_id, shared: !r.gmaps_shared });
       toast(t(r.gmaps_shared ? 'Removed from Google Maps watchlist' : 'Marked as sharing on Google Maps'), 'ok');
@@ -45,9 +43,25 @@ export async function livePage(ctx) {
     } catch (e) { toastError(e); }
   }
 
+  // d56: تحديث يدوي — الأدمن متأكد إن الكابتن شغال (شافه في Google Maps)
+  async function refreshIosLocation(r) {
+    if (!(await confirmDialog(
+      t('Confirm that {n} is active? This will reset their "off the grid" timer for 15 minutes.', { n: r.employee_name }),
+      { okLabel: t('✅ Yes, they are active'), danger: false }
+    ))) return;
+    try {
+      await ctx.api.call('adminRefreshIosLocation', { employee_id: r.employee_id });
+      toast(t('Updated — {n} is now shown as active for 15 minutes', { n: r.employee_name }), 'ok');
+      lpRef.reload();
+    } catch (e) { toastError(e); }
+  }
+
   const lp = lpRef = listPage({
     auto: AUTO_REFRESH_MS,
-    toolbar: [button(t('Refresh'), { id: 'btn-refresh', kind: 'primary', on: { click: () => lpRef.reload() } }), h('span', { class: 'hint' }, t('Updates automatically every 10 minutes. Press Refresh for the latest data now.'))],
+    toolbar: [
+      button(t('Refresh'), { id: 'btn-refresh', kind: 'primary', on: { click: () => lpRef.reload() } }),
+      h('span', { class: 'hint' }, t('Updates automatically every 10 minutes. Press Refresh for the latest data now.'))
+    ],
     columns: [
       { key: 'employee_name', label: 'Name', render: (r) => h('span', {}, h('strong', {}, r.employee_name), h('br'), h('small', {}, r.employee_id)) },
       { key: 'branch_name', label: 'Branch' },
@@ -63,37 +77,63 @@ export async function livePage(ctx) {
         key: 'gmaps_shared',
         label: 'Google Maps',
         render: (r) => {
-          // لو في رابط → زرار أخضر "متابعة Live" يفتح الرابط
-          if (r.gmaps_link) {
-            return button('🗺️ ' + t('Watch Live'), {
-              small: true,
-              style: 'background:#2e7d32;color:#fff;border-color:#2e7d32',
-              on: { click: () => toggleGmaps(r) }
-            });
-          }
-          // لو مفيش رابط → زرار Watch العادي
-          return button(r.gmaps_shared ? t('Watching') : t('Watch'), {
-            small: true,
-            class: r.gmaps_shared ? 'x' : '',
-            on: { click: () => toggleGmaps(r) }
-          });
+          // عمود Google Maps: Watch Live + زرار أخضر صغير لو في رابط
+          const watchBtn = r.gmaps_link
+            ? button('🗺️ ' + t('Watch Live'), {
+                small: true,
+                style: 'background:#2e7d32;color:#fff;border-color:#2e7d32',
+                on: { click: () => toggleGmaps(r) }
+              })
+            : button(r.gmaps_shared ? t('Watching') : t('Watch'), {
+                small: true,
+                class: r.gmaps_shared ? 'x' : '',
+                on: { click: () => toggleGmaps(r) }
+              });
+
+          // زرار أخضر صغير "✅ شغال" — بيظهر بس لو في رابط Google Maps (يعني iOS)
+          const confirmBtn = r.gmaps_link
+            ? button('✅ ' + t('Active'), {
+                small: true,
+                style: 'background:#43a047;color:#fff;border-color:#43a047;margin-top:4px;display:block;width:100%',
+                title: t('I confirmed this captain is active via Google Maps. Reset their off-grid timer.'),
+                on: { click: () => refreshIosLocation(r) }
+              })
+            : null;
+
+          return h('span', { style: 'display:flex;flex-direction:column;gap:4px' }, watchBtn, confirmBtn);
         }
       },
-      { key: 'actions', label: 'Actions', render: (r) => h('span', { class: 'btn-row' }, detailLink(r), r.on_break && ctx.user.permissions.includes('assign_shifts') ? button(t('End break'), { small: true, class: 'x', on: { click: () => endBreak(r) } }) : null, ctx.user.permissions.includes('assign_shifts') ? button(t('End shift'), { small: true, class: 'x', on: { click: () => endShift(r) } }) : null, button(t('Ping now'), { small: true, kind: 'primary', on: { click: () => pingNow(r) } })) }
+      {
+        key: 'actions',
+        label: 'Actions',
+        render: (r) => h('span', { class: 'btn-row' },
+          detailLink(r),
+          r.on_break && ctx.user.permissions.includes('assign_shifts')
+            ? button(t('End break'), { small: true, class: 'x', on: { click: () => endBreak(r) } })
+            : null,
+          ctx.user.permissions.includes('assign_shifts')
+            ? button(t('End shift'), { small: true, class: 'x', on: { click: () => endShift(r) } })
+            : null,
+          button(t('Ping now'), { small: true, kind: 'primary', on: { click: () => pingNow(r) } })
+        )
+      }
     ],
     empty: t('No employees are currently on duty.'),
     async load() {
       const res = await ctx.api.call('getCurrentStatuses', { date: todayLocal(), page_size: 500 });
       const active = res.items.filter((r) => r.attendance_state === 'CHECKED_IN');
       const pings = {};
-      try { const lm = await ctx.api.call('getLiveMap', {}); ((lm && lm.items) || []).forEach((x) => { pings[x.employee_id] = x; }); } catch (e) { /* النبضات اختيارية */ }
+      try {
+        const lm = await ctx.api.call('getLiveMap', {});
+        ((lm && lm.items) || []).forEach((x) => { pings[x.employee_id] = x; });
+      } catch (e) { /* النبضات اختيارية */ }
       const merged = active.map((r) => {
         const p = pings[r.employee_id] || {};
         return Object.assign({}, r, {
           pings_unanswered: p.pings_unanswered || 0,
           last_ping_at:     p.last_ping_at     || '',
           gmaps_shared:     !!p.gmaps_shared,
-          gmaps_link:       p.gmaps_link        || ''   // ← جديد d55
+          gmaps_link:       p.gmaps_link        || ''
         });
       });
       drawMap(merged);
@@ -108,7 +148,7 @@ export async function livePage(ctx) {
       h('p', { class: 'hint' }, t('Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.')),
       h('p', { class: 'hint' }, t('GPS grace period: for up to 15 minutes after his last GPS update the captain keeps his last known state (green "Inside branch"). Only after a full 15 minutes with no GPS update does he show as "Off the grid".')),
       h('p', { class: 'hint' }, t('Tip: the table scrolls sideways - drag the bar under the table (or hold Shift and roll the mouse wheel) to see the rest of the columns.')),
-      h('p', { class: 'hint', style: 'color:#2e7d32' }, t('🗺️ iPhone captains: if a captain shared their Google Maps link, the Watch button turns green and opens their live location directly.')),
+      h('p', { class: 'hint', style: 'color:#2e7d32' }, t('🗺️ iPhone captains: Watch Live opens their Google Maps location. ✅ Active confirms they are working and resets their off-grid timer for 15 minutes.')),
       mapBox, mapNote, lp.el),
     destroy: lp.stop
   };
