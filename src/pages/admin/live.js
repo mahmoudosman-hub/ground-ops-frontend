@@ -120,13 +120,14 @@ export async function livePage(ctx) {
     ],
     empty: t('No employees are currently on duty.'),
     async load() {
-      const res = await ctx.api.call('getCurrentStatuses', { date: todayLocal(), page_size: 500 });
+      // parallel calls — بيشتغلوا مع بعض مش متتاليين
+      const [res, lmRes] = await Promise.all([
+        ctx.api.call('getCurrentStatuses', { date: todayLocal(), page_size: 500 }),
+        ctx.api.call('getLiveMap', {}).catch(() => null)
+      ]);
       const active = res.items.filter((r) => r.attendance_state === 'CHECKED_IN');
       const pings = {};
-      try {
-        const lm = await ctx.api.call('getLiveMap', {});
-        ((lm && lm.items) || []).forEach((x) => { pings[x.employee_id] = x; });
-      } catch (e) { /* النبضات اختيارية */ }
+      ((lmRes && lmRes.items) || []).forEach((x) => { pings[x.employee_id] = x; });
       const merged = active.map((r) => {
         const p = pings[r.employee_id] || {};
         return Object.assign({}, r, {
