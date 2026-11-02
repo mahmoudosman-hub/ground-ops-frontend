@@ -90,7 +90,11 @@ const AR = {
   'Swapping... please wait': 'جاري التبديل... استنى لحظة', // d58
   'A new version is available.': 'فيه نسخة جديدة من البرنامج جاهزة.', 'Reload': 'حدّث', // d58
   'No active assignment on that date for {n}.': '{n} مالوش شيفت مسجلة في اليوم ده.',
-  'No registered device for: {n}': 'مفيش جهاز مسجل بإشعارات لـ: {n}'
+  'No registered device for: {n}': 'مفيش جهاز مسجل بإشعارات لـ: {n}',
+  // d66: رسايل التايمآوت في صفحة استيراد الجدول
+  'The server is taking longer than expected. The changes were most likely applied successfully.': 'السيرفر بياخد وقت أطول من المتوقع. التغييرات غالبًا اتنفذت بنجاح.',
+  'Reload the page to confirm.': 'حدّث الصفحة للتأكيد.',
+  'Taking longer than expected — reload to confirm': 'بياخد وقت أطول من المتوقع — حدّث الصفحة للتأكيد'
 };
 
 // دمج قاموس الأدمن القديم (admin-translations.js) — المفاتيح اللي مكتوبة فوق ليها الأولوية دايماً
