@@ -11,6 +11,101 @@ import { createHome } from './home.js';
 import { createNotificationBell } from '../../components/notifications.js';
 import { createScheduleView, createRequestsView } from './requests.js';
 
+// =====================================================================
+// iOS Google Maps Location Share — d55
+// لو الجهاز iPhone → بيظهر card يلصق فيه الكابتن رابط Google Maps Live Share
+// التطبيق بيجيب الإحداثيات من الرابط ويبعتها للسيرفر زي أي لوكيشن عادي
+// =====================================================================
+
+/** جيب الإحداثيات من رابط Google Maps — بيشتغل مع روابط @lat,lng */
+function parseGmapsCoords(url) {
+  const m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (!m) return null;
+  return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+}
+
+/** Card مشاركة الموقع — بيظهر بس على iOS */
+function createIosLocationCard(api) {
+  let lastSent = 0;
+  const COOLDOWN_MS = 60 * 1000; // مرة واحدة كل دقيقة على الأكتر
+
+  const input = h('input', {
+    type: 'url',
+    id: 'ios-gmaps-input',
+    placeholder: 'الصق رابط Google Maps هنا...',
+    style: 'width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;box-sizing:border-box;direction:rtl'
+  });
+
+  const statusEl = h('p', {
+    id: 'ios-gmaps-status',
+    style: 'font-size:12px;color:#666;margin:6px 0 0;min-height:18px;text-align:right'
+  });
+
+  const sendBtn = button('📍 إرسال موقعي', {
+    kind: 'primary',
+    small: true,
+    id: 'btn-ios-send',
+    on: {
+      click: async () => {
+        const url = (input.value || '').trim();
+        if (!url) {
+          mount(statusEl, h('span', { style: 'color:#c00' }, '⚠️ الصق الرابط الأول'));
+          return;
+        }
+        const coords = parseGmapsCoords(url);
+        if (!coords) {
+          mount(statusEl, h('span', { style: 'color:#c00' }, '❌ رابط مش صح — افتح Google Maps وانسخ الرابط من شريط العنوان'));
+          return;
+        }
+        const now = Date.now();
+        if (now - lastSent < COOLDOWN_MS) {
+          const sec = Math.ceil((COOLDOWN_MS - (now - lastSent)) / 1000);
+          mount(statusEl, h('span', { style: 'color:#888' }, `⏳ استنى ${sec} ثانية`));
+          return;
+        }
+        sendBtn.disabled = true;
+        mount(statusEl, h('span', { style: 'color:#888' }, '⏳ بيتبعت...'));
+        try {
+          await api.call('submitLocation', {
+            points: [{
+              latitude:  coords.lat,
+              longitude: coords.lng,
+              accuracy:  50,          // دقة افتراضية معقولة لـ Google Maps
+              timestamp: new Date().toISOString(),
+              source:    'gmaps_share' // عشان نعرف في الـ logs إنه جاي من iOS share
+            }]
+          });
+          lastSent = Date.now();
+          input.value = '';
+          mount(statusEl, h('span', { style: 'color:#0a0' }, `✅ تم الإرسال — ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`));
+          setTimeout(() => mount(statusEl), 5000);
+        } catch (e) {
+          mount(statusEl, h('span', { style: 'color:#c00' }, '❌ ' + (e.message || 'حصل خطأ، حاول تاني')));
+          sendBtn.disabled = false;
+        }
+        sendBtn.disabled = false;
+      }
+    }
+  });
+
+  const card = h('div', {
+    id: 'ios-location-card',
+    style: 'background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:14px;margin:12px 0'
+  },
+    h('p', { style: 'font-weight:600;margin:0 0 4px;text-align:right;color:#5d4037' },
+      '📍 شارك موقعك (iPhone)'
+    ),
+    h('p', { style: 'font-size:12px;color:#666;margin:0 0 10px;text-align:right;line-height:1.5' },
+      'افتح Google Maps ← دوس على صورتك ← "مشاركة الموقع" ← انسخ الرابط من شريط العنوان والصقه هنا'
+    ),
+    input,
+    h('div', { style: 'margin-top:8px;display:flex;gap:8px;justify-content:flex-end' }, sendBtn),
+    statusEl
+  );
+
+  return card;
+}
+
 export function mountEmployeeApp(root, deps = {}) {
   initLang();
   const api = deps.api || createApi('employee'), provider = deps.provider || selectProvider(), queue = deps.queue || createQueue();
@@ -63,7 +158,16 @@ export function mountEmployeeApp(root, deps = {}) {
     const refreshBtn = button('⟳', { id: 'btn-tabs-refresh', small: true, class: 'tab-refresh', aria: t('Refresh'), on: { click: () => { try { if (globalThis.window && window.gopsClearCache) window.gopsClearCache(); } catch (e) {} globalThis.location.reload(); } } });
     refreshBtn.title = t('Refresh');
     function show(k) { Object.keys(boxes).forEach((n) => { boxes[n].hidden = n !== k; }); tabs.forEach((b, i) => { const on = ['home', 'schedule', 'requests'][i] === k; b.classList.toggle('active', on); b.setAttribute('aria-current', on ? 'page' : 'false'); }); if (k === 'schedule') sched.refresh(); if (k === 'requests') reqs.refresh(); else if (k === 'home' && home) home.refresh(); }
-    mount(body, h('nav', { class: 'tabs', id: 'tabs', 'aria-label': t('Sections') }, ...tabs, refreshBtn), boxes.home, boxes.schedule, boxes.requests); show('home');
+
+    // d55: iOS card — بيظهر بس على iPhone
+    const iosCard = isIos() ? createIosLocationCard(api) : null;
+
+    mount(body,
+      h('nav', { class: 'tabs', id: 'tabs', 'aria-label': t('Sections') }, ...tabs, refreshBtn),
+      iosCard,          // ← بيظهر تحت الـ tabs على iPhone بس
+      boxes.home, boxes.schedule, boxes.requests
+    );
+    show('home');
   }
   view();
   return { api, view, get home() { return home; } };
