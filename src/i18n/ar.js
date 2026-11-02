@@ -61,6 +61,8 @@ const AR = {
   // ---------- خرائط جوجل ----------
   'Google Maps': 'خرائط جوجل', 'Watch': 'متابعة', 'Watching': 'بيتم المتابعة',
   'Removed from Google Maps watchlist': 'اتشالت من قائمة متابعة خرائط جوجل', 'Marked as sharing on Google Maps': 'اتسجل على قائمة متابعة خرائط جوجل',
+  'Watch Live': 'متابعة لايف',
+  '🗺️ iPhone captains: if a captain shared their Google Maps link, the Watch button turns green and opens their live location directly.': '🗺️ كباتن الآيفون: لو كابتن شارك رابط خرائط جوجل بتاعه، زرار المتابعة بيتحول لأخضر وبيفتح موقعه لايف على طول.',
 
   // ---------- الإشعارات (d48) ----------
   'Notifications': 'الإشعارات', 'Notifications ({n} unread)': 'الإشعارات ({n} غير مقروء)',

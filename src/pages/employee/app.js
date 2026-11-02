@@ -11,6 +11,73 @@ import { createHome } from './home.js';
 import { createNotificationBell } from '../../components/notifications.js';
 import { createScheduleView, createRequestsView } from './requests.js';
 
+// =====================================================================
+// d55 — iOS Google Maps Live Share card
+// الكابتن يلصق رابط Live Share → يتحفظ على السيرفر
+// الأدمن يدوس Watch → يفتح الرابط في تاب جديد ويشوف الكابتن live
+// =====================================================================
+
+function createIosLocationCard(api) {
+  const input = h('input', {
+    type: 'url',
+    id: 'ios-gmaps-input',
+    placeholder: 'الصق رابط Google Maps هنا...',
+    style: 'width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;box-sizing:border-box;direction:rtl'
+  });
+
+  const statusEl = h('p', {
+    id: 'ios-gmaps-status',
+    style: 'font-size:12px;color:#666;margin:6px 0 0;min-height:18px;text-align:right'
+  });
+
+  const sendBtn = button('📍 شارك موقعي', {
+    kind: 'primary',
+    small: true,
+    id: 'btn-ios-send',
+    on: {
+      click: async () => {
+        const url = (input.value || '').trim();
+        if (!url) {
+          mount(statusEl, h('span', { style: 'color:#c00' }, '⚠️ الصق الرابط الأول'));
+          return;
+        }
+        // تحقق بسيط إن الرابط من Google Maps
+        if (!/google\.com\/maps|maps\.app\.goo\.gl/.test(url)) {
+          mount(statusEl, h('span', { style: 'color:#c00' }, '❌ رابط مش صح — لازم يكون من Google Maps'));
+          return;
+        }
+        sendBtn.disabled = true;
+        mount(statusEl, h('span', { style: 'color:#888' }, '⏳ بيتحفظ...'));
+        try {
+          await api.call('saveGmapsLink', { gmaps_link: url });
+          mount(statusEl, h('span', { style: 'color:#0a0' }, '✅ تم — الأدمن دلوقتي يقدر يتابع موقعك live'));
+          // ماسحش الـ input عشان الكابتن يقدر يشوف اللي بعته
+        } catch (e) {
+          mount(statusEl, h('span', { style: 'color:#c00' }, '❌ ' + (e.message || 'حصل خطأ، حاول تاني')));
+        }
+        sendBtn.disabled = false;
+      }
+    }
+  });
+
+  return h('div', {
+    id: 'ios-location-card',
+    style: 'background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:14px;margin:12px 0'
+  },
+    h('p', { style: 'font-weight:600;margin:0 0 4px;text-align:right;color:#5d4037' },
+      '📍 شارك موقعك مع الأدمن (iPhone)'
+    ),
+    h('p', { style: 'font-size:12px;color:#666;margin:0 0 10px;text-align:right;line-height:1.6' },
+      '١. افتح Google Maps', h('br'),
+      '٢. دوس على صورتك ← مشاركة الموقع ← اختار مدة (٨ ساعات مثلاً)', h('br'),
+      '٣. دوس "نسخ الرابط" والصقه هنا'
+    ),
+    input,
+    h('div', { style: 'margin-top:8px;display:flex;gap:8px;justify-content:flex-end' }, sendBtn),
+    statusEl
+  );
+}
+
 export function mountEmployeeApp(root, deps = {}) {
   initLang();
   const api = deps.api || createApi('employee'), provider = deps.provider || selectProvider(), queue = deps.queue || createQueue();
@@ -59,11 +126,19 @@ export function mountEmployeeApp(root, deps = {}) {
     home = createHome({ api, provider, queue }); sched = createScheduleView({ api }); reqs = createRequestsView({ api, onChange: () => { if (home) home.refresh(); } });
     const boxes = { home: h('div', { id: 'view-home' }, home.el), schedule: h('div', { id: 'view-schedule', hidden: true }, sched.el), requests: h('div', { id: 'view-requests', hidden: true }, reqs.el) };
     const tabs = [['home', 'Home'], ['schedule', 'My schedule'], ['requests', 'Requests']].map(([k, label]) => button(t(label), { id: `tab-${k}`, small: true, on: { click: () => show(k) } }));
-    // d54: زرار ⟳ الصغير جنب تاب «الطلبات» — الريفرش اليدوي الرسمي (ضغطة واحدة = تنظيف الكاش + تحديث) بدل السحب-للتحديث اللي كان بيشتغل بالغلط وسط الإشعارات
     const refreshBtn = button('⟳', { id: 'btn-tabs-refresh', small: true, class: 'tab-refresh', aria: t('Refresh'), on: { click: () => { try { if (globalThis.window && window.gopsClearCache) window.gopsClearCache(); } catch (e) {} globalThis.location.reload(); } } });
     refreshBtn.title = t('Refresh');
     function show(k) { Object.keys(boxes).forEach((n) => { boxes[n].hidden = n !== k; }); tabs.forEach((b, i) => { const on = ['home', 'schedule', 'requests'][i] === k; b.classList.toggle('active', on); b.setAttribute('aria-current', on ? 'page' : 'false'); }); if (k === 'schedule') sched.refresh(); if (k === 'requests') reqs.refresh(); else if (k === 'home' && home) home.refresh(); }
-    mount(body, h('nav', { class: 'tabs', id: 'tabs', 'aria-label': t('Sections') }, ...tabs, refreshBtn), boxes.home, boxes.schedule, boxes.requests); show('home');
+
+    // d55: iOS card — بيظهر بس على iPhone
+    const iosCard = isIos() ? createIosLocationCard(api) : null;
+
+    mount(body,
+      h('nav', { class: 'tabs', id: 'tabs', 'aria-label': t('Sections') }, ...tabs, refreshBtn),
+      iosCard,
+      boxes.home, boxes.schedule, boxes.requests
+    );
+    show('home');
   }
   view();
   return { api, view, get home() { return home; } };
