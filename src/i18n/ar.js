@@ -120,7 +120,15 @@ const AR = {
   'Archived {n} rows': 'اتأرشف {n} سجل',
   'Move location logs older than {d} days into monthly archive sheets? Reports keep working.': 'هتنقل سجلات المواقع الأقدم من {d} يوم لأوراق أرشيف شهرية؟ التقارير هتفضل شغالة زي ما هي.',
   'Nothing is deleted by archiving. Deleting old archives happens only if "archive retention months" above is set above 0.': 'مفيش حاجة بتتحذف بالأرشفة. حذف الأرشيف القديم بيحصل بس لو قيمة «archive retention months» اللي فوق معمولة أكبر من 0.',
-  '{a} rows in Location_Logs, {b} rows in {c} monthly archive sheet(s): {n}': '{a} سجل في Location_Logs، {b} سجل في {c} ورقة أرشيف شهرية: {n}'
+  '{a} rows in Location_Logs, {b} rows in {c} monthly archive sheet(s): {n}': '{a} سجل في Location_Logs، {b} سجل في {c} ورقة أرشيف شهرية: {n}',
+
+  // ---------- d70: فجوات ترجمة قديمة في تطبيق الكابتن (بانر التثبيت + شاشة تغيير كلمة المرور) ----------
+  'For security you must change your temporary password before continuing.': 'لأمان حسابك لازم تغيّر كلمة المرور المؤقتة قبل ما تكمل.',
+  'Install app': 'ثبّت التطبيق',
+  'Install this app on your phone for quick access.': 'ثبّت التطبيق على موبايلك للوصول السريع.',
+  'Sections': 'الأقسام',
+  'To install on iPhone: tap the Share button in Safari, then "Add to Home Screen".': 'للتثبيت على الآيفون: دوس زرار المشاركة في Safari وبعدين اختار "Add to Home Screen".',
+  'Your Employee ID and password are provided by your administrator.': 'رقم الموظف وكلمة المرور بيوفّرهم لك المدير المسؤول.'
 };
 
 // دمج قاموس الأدمن القديم (admin-translations.js) — المفاتيح اللي مكتوبة فوق ليها الأولوية دايماً
