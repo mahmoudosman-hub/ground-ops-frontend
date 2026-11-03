@@ -102,7 +102,25 @@ const AR = {
   '✅ Yes, they are active': '✅ أيوه، شغال',
   'Updated — {n} is now shown as active for 15 minutes': 'تم — {n} هيظهر شغال لمدة ١٥ دقيقة',
   'I confirmed this captain is active via Google Maps. Reset their off-grid timer.': 'أنا متأكد إن الكابتن ده شغال من خرائط جوجل. ده هيصفّر مؤقت «خارج الشبكة» بتاعه.',
-  '🗺️ iPhone captains: Watch Live opens their Google Maps location. ✅ Active confirms they are working and resets their off-grid timer for 15 minutes.': '🗺️ كباتن الآيفون: «متابعة لايف» بتفتح موقعهم على خرائط جوجل. و«✅ شغال» بتأكد إن الكابتن بيشتغل وبتصفّر مؤقت «خارج الشبكة» ١٥ دقيقة.'
+  '🗺️ iPhone captains: Watch Live opens their Google Maps location. ✅ Active confirms they are working and resets their off-grid timer for 15 minutes.': '🗺️ كباتن الآيفون: «متابعة لايف» بتفتح موقعهم على خرائط جوجل. و«✅ شغال» بتأكد إن الكابتن بيشتغل وبتصفّر مؤقت «خارج الشبكة» ١٥ دقيقة.',
+
+  // ---------- S22: التقارير الجديدة + كارت KPI في الإعدادات ----------
+  'Captain Daily Summary': 'ملخص الكابتن اليومي', 'KPI Scores': 'درجات الـ KPI',
+  'Run report': 'اعرض التقرير', 'Exported {n} rows': 'تم تصدير {n} سجل',
+  'No records match these filters.': 'مفيش سجلات مطابقة للفلاتر دي.',
+  'Employee is required for "Employee Attendance History". Tracking gaps are limited to 31 days.': 'لازم تختار كابتن عشان تقرير «سجل حضور الكابتن». فجوات التتبع بتتعرض بحد أقصى 31 يوم.',
+  'KPI Configuration': 'إعدادات مؤشرات الأداء (KPI)',
+  'Choose which metrics count toward the KPI score, their weight (%), the allowed threshold before deductions start, and the deduction per unit above the threshold.': 'اختار المعايير اللي بتحسب في درجة الـ KPI، ووزن كل معيار (%)، والحد المسموح قبل ما الخصم يبدأ، وقيمة الخصم لكل وحدة زيادة عن الحد.',
+  'Metric': 'المعيار', 'Weight': 'الوزن', 'Threshold (allowed)': 'الحد المسموح', 'Deduction per unit': 'الخصم لكل وحدة',
+  'Save KPI settings': 'حفظ إعدادات الـ KPI', 'KPI settings saved': 'إعدادات الـ KPI اتحفظت ✅',
+  'min': 'دقيقة', 'times': 'مرات', 'time': 'مرة',
+  'No changes': 'مفيش تغييرات', 'Settings saved': 'الإعدادات اتحفظت ✅',
+  'Location log archive': 'أرشيف سجل المواقع', 'Archive now': 'أرشفة دلوقتي',
+  'Archive status unavailable.': 'حالة الأرشيف مش متاحة.',
+  'Archived {n} rows': 'اتأرشف {n} سجل',
+  'Move location logs older than {d} days into monthly archive sheets? Reports keep working.': 'هتنقل سجلات المواقع الأقدم من {d} يوم لأوراق أرشيف شهرية؟ التقارير هتفضل شغالة زي ما هي.',
+  'Nothing is deleted by archiving. Deleting old archives happens only if "archive retention months" above is set above 0.': 'مفيش حاجة بتتحذف بالأرشفة. حذف الأرشيف القديم بيحصل بس لو قيمة «archive retention months» اللي فوق معمولة أكبر من 0.',
+  '{a} rows in Location_Logs, {b} rows in {c} monthly archive sheet(s): {n}': '{a} سجل في Location_Logs، {b} سجل في {c} ورقة أرشيف شهرية: {n}'
 };
 
 // دمج قاموس الأدمن القديم (admin-translations.js) — المفاتيح اللي مكتوبة فوق ليها الأولوية دايماً
