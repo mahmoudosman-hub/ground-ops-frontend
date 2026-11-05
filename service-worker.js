@@ -1,4 +1,4 @@
-/* Ground OPS Tracker service worker - FAST LOAD (build d88 — precache unified-d88: شيل كارت اللينك القديم وقت البوابة) */
+/* Ground OPS Tracker service worker - FAST LOAD (build d89 — precache unified-d89: البوابة آيفون بس) */
 importScripts('./precache-manifest.js');
 const CACHE = `gops-${self.GOPS_PRECACHE.version}`;
 const SHELL = self.GOPS_PRECACHE.files;
