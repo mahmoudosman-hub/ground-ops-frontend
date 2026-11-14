@@ -697,6 +697,11 @@ AR['Turning off Location, revoking the permission, or force-stopping the app sto
 AR['Employees on leave appear as "On leave", never as absent.'] = 'الموظفين في إجازة بيظهروا «في إجازة» — مش غايبين أبدًا.';
 AR['⚡ Loud push sends a max-priority ntfy notification to a captain\'s private channel — it rings even when their app is closed. Channels are managed from the ntfy card in Settings.'] = '⚡ الزقّة القوية بتبعت إشعار ntfy بأعلى أولوية على قناة الكابتن الخاصة — بيرن حتى لو التطبيق مقفول. القنوات بتتظبط من كارت ntfy في الإعدادات.';
 
+// d101 — عداد البريك الحي في المراقبة المباشرة
+AR['Break timer'] = 'عداد البريك';
+AR['Total break this shift: {m} min'] = 'إجمالي البريك في الشيفت: {m} دقيقة';
+AR['Break counter: it counts up live while a captain is on break, and the total keeps the saved minutes when he takes another break.'] = 'عداد البريك بيعد حيًا طول ما الكابتن في البريك — والإجمالي بيكمل عالتايم المحفوظة لما يقفل ويأخد بريك تاني.';
+
 // دمج قاموس الأدمن القديم (admin-translations.js) — المفاتيح اللي مكتوبة فوق ليها الأولوية دايماً
 try {
   const legacy = (globalThis.GOPS_ADMIN_I18N && globalThis.GOPS_ADMIN_I18N.ui) || {};

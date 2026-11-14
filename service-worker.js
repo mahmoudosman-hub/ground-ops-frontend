@@ -1,4 +1,4 @@
-/* Ground OPS Tracker service worker - FAST LOAD (build d100 — precache unified-d100: بقايا جوجل ماب الأخيرة اتشالت نهائيًا — عمود Google Maps من المراقبة المباشرة/الخريطة والنبضات + كارت بوابة اللينك الميت من الإعدادات + مفاتيح ترجمة يتيمة + d99 بوابة Traccar Client قبل الدخول + d97 ريبورتات مجمّعة لكل كابتن + تنزيل مجمّع CSV) */
+/* Ground OPS Tracker service worker - FAST LOAD (build d101 — precache unified-d101: عداد البريك الحي في المراقبة المباشرة — عدّاد بالثواني للبريك المفتوح + إجمالي تراكمي بيكمل عالتايم المحفوظ + d100 تنظيف بقايا جوجل ماب من الإدمن + d99 بوابة Traccar Client قبل الدخول + d97 ريبورتات مجمّعة لكل كابتن + تنزيل مجمّع CSV) */
 importScripts('./precache-manifest.js');
 const CACHE = `gops-${self.GOPS_PRECACHE.version}`;
 const SHELL = self.GOPS_PRECACHE.files;

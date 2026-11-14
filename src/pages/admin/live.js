@@ -6,6 +6,8 @@ import { createMap, drawBranches, drawPoint, fit } from './map.js';
 import { locationCell, detailLink, AUTO_REFRESH_MS, effectiveLocationState } from './dashboard.js';
 
 /** صفحة "المراقبة المباشرة" الموحدة
+ *  d101: عمود «عداد البريك» — كابتن في بريك حاليًا = عدّاد حي بيعد بالثواني من بداية البريك (بيبان لك دايماً بقاله كام دقيقة)
+ *  والإجمالي التراكمي للشيفت بيكمل عالتايم المحفوظ من السيرفر لما يقفل البريك ويأخد بريك تاني (مرساة server_time)
  *  d100: عمود المتابعة القديم باللينك (Watch + ✅ شغال) اتشال نهائيًا — قرار المالك: التتبع الرسمي Traccar Client بس،
  *  والنبض الحقيقي بيحدّث last_location_at تلقائيًا فمش محتاج تأكيد يدوي للإدمن */
 export async function livePage(ctx) {
@@ -30,6 +32,32 @@ export async function livePage(ctx) {
     } catch (e) { toastError(e); }
   }
 
+  // ── d101: عداد البريك الحي ──
+  // مرساة وقت السيرفر (server_time) لآخر تحميل: الإجمالي المحفوظ (break_used_minutes) بيكمل عليه عدّ حي طالما الكابتن لسه في البريك
+  let serverAnchorMs = Date.now();
+  const mmss = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60; return hh ? `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`; };
+  function breakCell(r) {
+    const used = Number(r.break_used_minutes) || 0, onBrk = !!(r.on_break && r.break_started_at);
+    if (!onBrk && used <= 0) return h('span', { class: 'hint' }, '—');
+    const parts = [];
+    if (onBrk) {
+      parts.push(h('span', { class: 'brk-live' }, badge('ON_BREAK'),
+        h('span', { class: 'brk-timer' + (r.break_exceeded ? ' brk-over' : ''), dir: 'ltr', dataset: { brkStart: r.break_started_at } }, mmss(Date.now() - Date.parse(r.break_started_at)))));
+      if (r.break_exceeded) parts.push(badge('BREAK_EXCEEDED'));
+    }
+    parts.push(h('span', { class: 'brk-total', dataset: { brkUsed: String(used), brkOn: onBrk ? '1' : '', brkAnchor: String(serverAnchorMs) } }, t('Total break this shift: {m} min', { m: used })));
+    return h('span', { class: 'brk-cell' }, ...parts);
+  }
+  // مُعدّ الثواني: عداد الجلسة المفتوحة بيتحدث كل ثانية + الإجمالي بيكمل من التايم المحفوظ (من غيره مفيش عدّ بين التحميلات)
+  const ticker = setInterval(() => {
+    const doc = globalThis.document, now = Date.now(); if (!doc) return;
+    doc.querySelectorAll('.brk-timer[data-brk-start]').forEach((el) => { const st = Date.parse(el.dataset.brkStart); if (!isNaN(st)) el.textContent = mmss(now - st); });
+    doc.querySelectorAll('.brk-total[data-brk-used]').forEach((el) => {
+      const used = Number(el.dataset.brkUsed) || 0, drift = el.dataset.brkOn === '1' ? Math.max(0, now - (Number(el.dataset.brkAnchor) || now)) : 0;
+      el.textContent = t('Total break this shift: {m} min', { m: Math.floor((used * 60000 + drift) / 60000) });
+    });
+  }, 1000);
+
   const lp = lpRef = listPage({
     auto: AUTO_REFRESH_MS,
     toolbar: [
@@ -40,6 +68,7 @@ export async function livePage(ctx) {
       { key: 'employee_name', label: 'Name', render: (r) => h('span', {}, h('strong', {}, r.employee_name), h('br'), h('small', {}, r.employee_id)) },
       { key: 'branch_name', label: 'Branch' },
       { key: 'attendance_state', label: 'Current status', render: (r) => badge(r.attendance_state) },
+      { key: 'break_timer', label: 'Break timer', render: (r) => breakCell(r) },
       { key: 'last_location_at', label: 'Last GPS update', render: (r) => (r.last_location_at ? `${fmtTime(r.last_location_at)} (${agoText(r.last_location_at)})` : '-') },
       { key: 'last_distance_meters', label: 'Distance from branch', render: (r) => (r.last_distance_meters != null ? `${Math.round(r.last_distance_meters)} m` : '-') },
       { key: 'location_state', label: 'Inside / outside', render: locationCell },
@@ -69,6 +98,7 @@ export async function livePage(ctx) {
         ctx.api.call('getCurrentStatuses', { date: todayLocal(), page_size: 500 }),
         ctx.api.call('getLiveMap', {}).catch(() => null)
       ]);
+      serverAnchorMs = (res && res.server_time) ? Date.parse(res.server_time) : Date.now();
       const active = res.items.filter((r) => r.attendance_state === 'CHECKED_IN');
       const pings = {};
       ((lmRes && lmRes.items) || []).forEach((x) => { pings[x.employee_id] = x; });
@@ -88,10 +118,11 @@ export async function livePage(ctx) {
     el: h('div', {},
       h('h1', {}, t('Live Monitoring')),
       h('p', { class: 'hint' }, t('"On break" means the captain is allowed to have location off. "Tracking unavailable" means no recent GPS data - it does not mean the employee left the branch.')),
+      h('p', { class: 'hint' }, t('Break counter: it counts up live while a captain is on break, and the total keeps the saved minutes when he takes another break.')),
       h('p', { class: 'hint' }, t('Pings: the system automatically pings captains whose location is stale (every 15 minutes). "Pings without reply" shows who did not respond, and "Ping now" sends a ping yourself.')),
       h('p', { class: 'hint' }, t('GPS grace period: for up to 15 minutes after his last GPS update the captain keeps his last known state (green "Inside branch"). Only after a full 15 minutes with no GPS update does he show as "Off the grid".')),
       h('p', { class: 'hint' }, t('Tip: the table scrolls sideways - drag the bar under the table (or hold Shift and roll the mouse wheel) to see the rest of the columns.')),
       mapBox, mapNote, lp.el),
-    destroy: lp.stop
+    destroy() { lp.stop(); clearInterval(ticker); }
   };
 }
