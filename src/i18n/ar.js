@@ -702,6 +702,11 @@ AR['Break timer'] = 'عداد البريك';
 AR['Total break this shift: {m} min'] = 'إجمالي البريك في الشيفت: {m} دقيقة';
 AR['Break counter: it counts up live while a captain is on break, and the total keeps the saved minutes when he takes another break.'] = 'عداد البريك بيعد حيًا طول ما الكابتن في البريك — والإجمالي بيكمل عالتايم المحفوظة لما يقفل ويأخد بريك تاني.';
 
+// d102 — تغيير الفرع/الشيفت أثناء الشيفت (حتى بعد الحضور)
+AR['Changed during the shift ✅ attendance, live tracking and captain notification updated.'] = 'اتغير أثناء الشيفت ✅ — سجل الحضور والتتبع المباشر اتنقلوا للفرع الجديد وتبعت إشعار للكابتن.';
+AR['You can change the shift or branch even after check-in - attendance and live tracking follow the new branch automatically, and the captain gets a notification.'] = 'تقدر تغير الشيفت أو الفرع حتى بعد تسجيل الحضور — سجل الحضور والتتبع المباشر بيتبعوا الفرع الجديد أوتوماتيك، والكابتن بيوصله إشعار.';
+AR['This day already has attendance, so the day itself is locked - but you can still change the shift or branch (attendance follows automatically). Cancelling or creating a new assignment for this day is not possible.'] = 'اليوم ده ليه سجل حضور فاليوم نفسه مقفول — بس تقدر تغير الشيفت أو الفرع عادي (والحضور بيتبع الفرع الجديد أوتوماتيك). الإلغاء أو إنشاء تعيين جديد لليوم ده مش ممكن.';
+
 // دمج قاموس الأدمن القديم (admin-translations.js) — المفاتيح اللي مكتوبة فوق ليها الأولوية دايماً
 try {
   const legacy = (globalThis.GOPS_ADMIN_I18N && globalThis.GOPS_ADMIN_I18N.ui) || {};

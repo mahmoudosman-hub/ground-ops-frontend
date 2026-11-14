@@ -1,4 +1,4 @@
-/* Ground OPS Tracker service worker - FAST LOAD (build d101 — precache unified-d101: عداد البريك الحي في المراقبة المباشرة — عدّاد بالثواني للبريك المفتوح + إجمالي تراكمي بيكمل عالتايم المحفوظ + d100 تنظيف بقايا جوجل ماب من الإدمن + d99 بوابة Traccar Client قبل الدخول + d97 ريبورتات مجمّعة لكل كابتن + تنزيل مجمّع CSV) */
+/* Ground OPS Tracker service worker - FAST LOAD (build d102 — precache unified-d102: تغيير الفرع/الشيفت أثناء الشيفت حتى بعد الحضور GAS v141+S39 — رسالة نقل الحضور والتتبع + d101 عداد البريك الحي في المراقبة المباشرة + d100 تنظيف جوجل ماب + d99 بوابة Traccar + d97 ريبورتات مجمّعة) */
 importScripts('./precache-manifest.js');
 const CACHE = `gops-${self.GOPS_PRECACHE.version}`;
 const SHELL = self.GOPS_PRECACHE.files;
